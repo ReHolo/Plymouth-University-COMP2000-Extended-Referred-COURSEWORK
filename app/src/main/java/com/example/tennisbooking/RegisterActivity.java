@@ -1,6 +1,5 @@
-package com.example.tennisbooking.fragment;
+package com.example.tennisbooking;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -13,9 +12,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.example.tennisbooking.R;
 import com.example.tennisbooking.db.UserDbHelper;
-import com.example.tennisbooking.entity.UserInfo;
 
 
 public class RegisterActivity extends AppCompatActivity {
@@ -23,7 +20,6 @@ public class RegisterActivity extends AppCompatActivity {
     private EditText editUsername;
 
     private EditText editPassword;
-
 
 
     @Override
@@ -38,8 +34,8 @@ public class RegisterActivity extends AppCompatActivity {
         });
 
 
-        editUsername =findViewById(R.id.editUsername);
-        editPassword =findViewById(R.id.editPassword);
+        editUsername = findViewById(R.id.editUsername);
+        editPassword = findViewById(R.id.editPassword);
 
 
         //toBack
@@ -61,19 +57,15 @@ public class RegisterActivity extends AppCompatActivity {
 
                 if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password)) {
                     Toast.makeText(RegisterActivity.this, "Please enter your username and password", Toast.LENGTH_SHORT).show();
-                }
-                else {
+                } else {
 
                     int row = UserDbHelper.getInstance(RegisterActivity.this).register(username, password);
-                    if(row>0){
+                    if (row > 0) {
                         Toast.makeText(RegisterActivity.this, "Successful registration", Toast.LENGTH_SHORT).show();
 
                         finish();
 
                     }
-
-
-
 
 
                 }

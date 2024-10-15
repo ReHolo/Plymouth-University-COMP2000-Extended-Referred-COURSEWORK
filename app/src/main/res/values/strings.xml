@@ -54,5 +54,11 @@
     <string name="sign_up">Sign Up</string>
     <string name="login">Login</string>
     <string name="register">Register</string>
+    <string name="courts">Courts</string>
+    <string name="weather">Weather</string>
+    <string name="mine">Mine</string>
+    <string name="home">Home</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 </resources>

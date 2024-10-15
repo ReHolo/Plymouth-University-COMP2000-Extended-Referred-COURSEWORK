@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:id="@+id/home"
+        android:title="@string/home"
+        android:icon="@drawable/baseline_home_24"/>
+
+
+    <item android:id="@+id/courts"
+        android:title="@string/courts"
+        android:icon="@drawable/baseline_sports_tennis_24"/>
+
+
+    <item android:id="@+id/weather"
+        android:title="@string/weather"
+        android:icon="@drawable/baseline_cloud_24"/>
+
+
+    <item android:id="@+id/mine"
+        android:title="@string/mine"
+        android:icon="@drawable/baseline_person_24"/>
+</menu>

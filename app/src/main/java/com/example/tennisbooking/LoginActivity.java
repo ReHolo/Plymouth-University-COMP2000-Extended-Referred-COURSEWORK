@@ -1,4 +1,4 @@
-package com.example.tennisbooking.fragment;
+package com.example.tennisbooking;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -14,7 +14,6 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.example.tennisbooking.R;
 import com.example.tennisbooking.db.UserDbHelper;
 import com.example.tennisbooking.entity.UserInfo;
 
@@ -37,11 +36,10 @@ public class LoginActivity extends AppCompatActivity {
         });
 
 
-        mSharedPreferences =getSharedPreferences("user",MODE_PRIVATE);
+        mSharedPreferences = getSharedPreferences("user", MODE_PRIVATE);
 
-        editUsername =findViewById(R.id.editUsername);
-        editPassword =findViewById(R.id.editPassword);
-
+        editUsername = findViewById(R.id.editUsername);
+        editPassword = findViewById(R.id.editPassword);
 
 
         //Onclick sign up
@@ -49,7 +47,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 //to sign up
-                Intent intent =new Intent(LoginActivity.this, RegisterActivity.class);
+                Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
                 startActivity(intent);
             }
         });
@@ -61,28 +59,24 @@ public class LoginActivity extends AppCompatActivity {
                 String password = editPassword.getText().toString();
                 if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password)) {
                     Toast.makeText(LoginActivity.this, "Please enter your username and password", Toast.LENGTH_SHORT).show();
-                }
-                else {
+                } else {
                     UserInfo login = UserDbHelper.getInstance(LoginActivity.this).login(username);
 
-                    if(login!=null){
-                        if(username.equals(login.getUsername()) && password.equals(login.getPassword())){
+                    if (login != null) {
+                        if (username.equals(login.getUsername()) && password.equals(login.getPassword())) {
                             //Successful sign
 
-                            Intent intent =new Intent(LoginActivity.this, MainActivity.class);
+                            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                             startActivity(intent);
 
-                        }
-                        else {
+                        } else {
                             Toast.makeText(LoginActivity.this, "Wrong username or password", Toast.LENGTH_SHORT).show();
                         }
 
 
-                    }
-                    else {
+                    } else {
                         Toast.makeText(LoginActivity.this, "Account not registered", Toast.LENGTH_SHORT).show();
                     }
-
 
 
                 }
