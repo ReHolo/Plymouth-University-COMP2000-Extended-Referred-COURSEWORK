@@ -13,5 +13,14 @@
         app:title="@string/weather"
         app:titleTextColor="@color/white"/>
 
+    <TextView
+        android:id="@+id/weatherTextView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="@string/loading"
+        android:textSize="18sp"
+        android:padding="16dp" />
+
 
 </FrameLayout>

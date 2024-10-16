@@ -1,75 +1,59 @@
 package com.example.tennisbooking;
 
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+import android.widget.Toolbar;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
-import com.example.tennisbooking.db.UserDbHelper;
-
+import com.example.tennisbooking.entity.UserDAO;
 
 public class RegisterActivity extends AppCompatActivity {
 
-    private EditText editUsername;
-
-    private EditText editPassword;
-
+    private EditText editTextUsername, editTextPassword, editTextEmail, editTextPhoneNumber;
+    private UserDAO userDAO;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_register);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+
+        editTextUsername = findViewById(R.id.editTextUsername);
+        editTextPassword = findViewById(R.id.editTextPassword);
+        editTextEmail = findViewById(R.id.editTextEmail);
+        editTextPhoneNumber = findViewById(R.id.editTextPhoneNumber);
+        Button buttonRegister = findViewById(R.id.buttonRegister);
 
 
-        editUsername = findViewById(R.id.editUsername);
-        editPassword = findViewById(R.id.editPassword);
+        userDAO = new UserDAO(this);
 
-
-        //toBack
         findViewById(R.id.toolbar_register).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
+            public void onClick(View v) {
                 finish();
             }
         });
 
-        //click sign up
 
-        findViewById(R.id.sign_up_bt).setOnClickListener(new View.OnClickListener() {
+        buttonRegister.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
+            public void onClick(View v) {
+                String username = editTextUsername.getText().toString();
+                String password = editTextPassword.getText().toString();
+                String email = editTextEmail.getText().toString();
+                String phoneNumber = editTextPhoneNumber.getText().toString();
 
-                String username = editUsername.getText().toString();
-                String password = editPassword.getText().toString();
+                boolean isRegistered = userDAO.registerUser(username, password, email, phoneNumber);
 
-                if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password)) {
-                    Toast.makeText(RegisterActivity.this, "Please enter your username and password", Toast.LENGTH_SHORT).show();
+                if (isRegistered) {
+                    Toast.makeText(RegisterActivity.this, "Successful registration", Toast.LENGTH_SHORT).show();
+                    finish();
                 } else {
-
-                    int row = UserDbHelper.getInstance(RegisterActivity.this).register(username, password);
-                    if (row > 0) {
-                        Toast.makeText(RegisterActivity.this, "Successful registration", Toast.LENGTH_SHORT).show();
-
-                        finish();
-
-                    }
-
-
+                    Toast.makeText(RegisterActivity.this, "Registration failed. Username or email address already exists.", Toast.LENGTH_SHORT).show();
                 }
-
             }
         });
     }
