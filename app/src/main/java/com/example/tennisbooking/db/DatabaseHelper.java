@@ -8,15 +8,18 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 import com.example.tennisbooking.entity.Booking;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Locale;
+
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "tennisbooking.db";
-    private static final int DATABASE_VERSION = 8;  // 更新版本号
+    private static final int DATABASE_VERSION = 9;  // 更新版本号
 
     // 定义表名和列名
     private static final String TABLE_USERS = "User";
     private static final String TABLE_BOOKINGS = "Booking";
-
     private static final String COLUMN_ACCOUNT_NO = "accountNo";
     private static final String COLUMN_MEMBER_NAME = "memberName";
     private static final String COLUMN_PASSWORD = "password";
@@ -29,9 +32,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_COURT_NO = "courtNo";  // courtNo 列
     private static final String COLUMN_COURT_TYPE = "courtType";
     private static final String COLUMN_BOOKING_DATE = "bookingDate";
+    private static final String COLUMN_DAY_OF_WEEK = "dayOfWeek";
     private static final String COLUMN_DURATION = "duration";
     private static final String COLUMN_EMAIL_BOOKING = "email";  // Booking 表中的 email 列
-    private static final String COLUMN_PHONE_BOOKING = "phone";  // Booking 表中的 phone 列
+    private static final String COLUMN_PHONE_BOOKING = "phone";
+
+
+    private static final String COLUMN_COURT_NAME = "courtName";
+    private static final String COLUMN_COURT_TYPE_COURT = "courtType";
+    private static final String TABLE_COURTS = "Court";
 
     // SQL statements to create tables
     private static final String CREATE_TABLE_USERS = "CREATE TABLE " + TABLE_USERS + "("
@@ -53,7 +62,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             + COLUMN_DURATION + " TEXT,"
             + COLUMN_EMAIL_BOOKING + " TEXT,"
             + COLUMN_PHONE_BOOKING + " TEXT,"
+            + COLUMN_DAY_OF_WEEK + " INTEGER,"
             + "FOREIGN KEY(" + COLUMN_ACCOUNT_NO_FK + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_ACCOUNT_NO + ")"
+            + ")";
+
+    private static final String CREATE_TABLE_COURTS = "CREATE TABLE " + TABLE_COURTS + "("
+            + COLUMN_COURT_NO + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + COLUMN_COURT_NAME + " TEXT,"
+            + COLUMN_COURT_TYPE_COURT + " TEXT"
             + ")";
 
     public DatabaseHelper(Context context) {
@@ -63,21 +79,51 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(CREATE_TABLE_USERS);  // 创建 Users 表
-        db.execSQL(CREATE_TABLE_BOOKINGS);  // 创建 Bookings 表
+        db.execSQL(CREATE_TABLE_BOOKINGS);
+        db.execSQL(CREATE_TABLE_COURTS);// 创建 Bookings 表
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion < 6) {
-            // 如果版本小于 6，添加 courtNo 列
-            db.execSQL("ALTER TABLE " + TABLE_BOOKINGS + " ADD COLUMN " + COLUMN_COURT_NO + " TEXT");
-        }
-
-        if (oldVersion < 5) {
-            db.execSQL("ALTER TABLE " + TABLE_BOOKINGS + " ADD COLUMN " + COLUMN_EMAIL_BOOKING + " TEXT");
-            db.execSQL("ALTER TABLE " + TABLE_BOOKINGS + " ADD COLUMN " + COLUMN_PHONE_BOOKING + " TEXT");
+        if (oldVersion < 9) {
+            db.execSQL(CREATE_TABLE_COURTS);
+            insertCourts(db);
         }
     }
+
+    private void insertCourts(SQLiteDatabase db) {
+        // 添加 4 个人工草坪球场
+        for (int i = 1; i <= 4; i++) {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_COURT_NAME, "Artificial Grass Court " + i);
+            values.put(COLUMN_COURT_TYPE_COURT, "Artificial Grass");
+            db.insert(TABLE_COURTS, null, values);
+        }
+
+        // 添加 2 个硬地球场
+        for (int i = 1; i <= 2; i++) {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_COURT_NAME, "Hard Court " + i);
+            values.put(COLUMN_COURT_TYPE_COURT, "Hard Court");
+            db.insert(TABLE_COURTS, null, values);
+        }
+
+        // 添加 4 个草地球场
+        for (int i = 1; i <= 4; i++) {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_COURT_NAME, "Grass Court " + i);
+            values.put(COLUMN_COURT_TYPE_COURT, "Grass");
+            db.insert(TABLE_COURTS, null, values);
+        }
+    }
+
+    // 获取所有球场信息
+    public Cursor getAllCourts() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT * FROM " + TABLE_COURTS;
+        return db.rawQuery(query, null);
+    }
+
     // 插入用户数据
     public long addUser(String memberName, String password, String phone, String email) {
         SQLiteDatabase db = this.getWritableDatabase();
@@ -127,6 +173,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         String query = "SELECT * FROM " + TABLE_BOOKINGS + " WHERE " + COLUMN_ACCOUNT_NO_FK + "=?";
         return db.rawQuery(query, new String[]{String.valueOf(accountNo)});
     }
+
 
     // 更新用户信息
     public int updateUser(int accountNo, String memberName, String phone, String email) {
@@ -302,11 +349,32 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put("email", booking.getEmail());
         values.put("phone", booking.getPhoneNumber());
 
+        // 自动生成 dayOfWeek
+        int dayOfWeek = getDayOfWeekFromDate(booking.getDate());
+        values.put(COLUMN_DAY_OF_WEEK, dayOfWeek);
+
         // 插入数据到 Booking 表
         return db.insert("Booking", null, values);
     }
 
 
+    public Cursor getAllBookings() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT * FROM Booking"; // Booking 表名
+        return db.rawQuery(query, null);
+    }
+
+    private int getDayOfWeekFromDate(String date) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(sdf.parse(date));
+            return calendar.get(Calendar.DAY_OF_WEEK) - 1; // 返回 0（周日）到 6（周六）
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1; // 出错时返回 -1
+        }
+    }
 
 
 

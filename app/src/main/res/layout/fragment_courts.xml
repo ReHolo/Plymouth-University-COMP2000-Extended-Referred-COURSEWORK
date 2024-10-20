@@ -1,27 +1,29 @@
 <!-- fragment_courts.xml -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/white">
 
-    android:orientation="vertical">
-    <androidx.appcompat.widget.Toolbar
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/my_light_primary"
-        app:title="@string/courts"
-        app:titleTextColor="@color/white"/>
+        android:orientation="vertical">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        <androidx.appcompat.widget.Toolbar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/my_light_primary"
+            app:title="@string/courts"
+            app:titleTextColor="@color/white" />
 
-    <Button
-        android:id="@+id/btnAddBooking"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Add Booking" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false" />
 
-</LinearLayout>
+
+
+    </LinearLayout>
+</ScrollView>

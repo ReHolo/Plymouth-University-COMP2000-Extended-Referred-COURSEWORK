@@ -5,14 +5,25 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.tennisbooking.Interface.BookingService;
 import com.example.tennisbooking.TextWatcher.DateTimeTextWatcher;
 import com.example.tennisbooking.db.DatabaseHelper;
+import com.example.tennisbooking.entity.Booking;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class BookingActivity extends AppCompatActivity {
 
@@ -101,11 +112,19 @@ public class BookingActivity extends AppCompatActivity {
                 // 更新用户预订状态
                 databaseHelper.updateUserBookingStatus(Integer.parseInt(accountNo), true);
 
+                uploadBookingToApi((int) result, accountNo, courtNo, courtType, bookingDate, duration, email, phone);
+
                 // 完成后关闭活动
                 finish();
             }
+
         });
+
+
+
     }
+
+
 
     // 校验邮箱格式
     private boolean isValidEmail(String email) {
@@ -132,4 +151,47 @@ public class BookingActivity extends AppCompatActivity {
             return false;
         }
     }
+    private int getDayOfWeek(String bookingDate) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(sdf.parse(bookingDate));
+            // Calendar.SUNDAY = 1, 我们将其调整为0-6表示周日到周六
+            return calendar.get(Calendar.DAY_OF_WEEK) - 1;
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return -1; // 表示解析失败
+        }
+    }
+
+    private void uploadBookingToApi(int bookingNo, String accountNo, String courtNo, String courtType, String bookingDate, String duration, String email, String phone) {
+        // 创建 Booking 对象
+        int dayOfWeek = getDayOfWeek(bookingDate);
+        Booking booking = new Booking(bookingNo, accountNo, null, courtType, courtNo, email, phone, bookingDate, 0, duration, null);
+
+        // 使用 Retrofit 初始化
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/") // 替换为您的API基本URL
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        BookingService apiService = retrofit.create(BookingService.class);
+        Call<Booking> call = apiService.createBooking(booking);
+        call.enqueue(new Callback<Booking>() {
+            @Override
+            public void onResponse(@NonNull Call<Booking> call, @NonNull Response<Booking> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(BookingActivity.this, "Booking uploaded to server successfully!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(BookingActivity.this, "Failed to upload booking to server. Status Code: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Booking> call, Throwable t) {
+                Toast.makeText(BookingActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
 }

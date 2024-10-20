@@ -1,6 +1,7 @@
 // CourtsFragment.java
 package com.example.tennisbooking.fragment;
 
+import android.database.Cursor;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,73 +15,81 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.tennisbooking.R;
 import com.example.tennisbooking.adapter.CourtAdapter;
-import com.example.tennisbooking.Interface.BookingService;
+import com.example.tennisbooking.db.DatabaseHelper;
 import com.example.tennisbooking.entity.Booking;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-
 public class CourtsFragment extends Fragment {
+
     private RecyclerView recyclerViewCourts;
     private CourtAdapter courtAdapter;
-    private List<Booking> BookingList;
+    private DatabaseHelper databaseHelper;
     private boolean userHasBooking = false; // This should be set based on actual user data
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_courts, container, false);
+
+        // 初始化RecyclerView
         recyclerViewCourts = view.findViewById(R.id.recyclerView);
         recyclerViewCourts.setLayoutManager(new LinearLayoutManager(getContext()));
-        fetchBookings();
+
+        // 初始化数据库帮助类
+        databaseHelper = new DatabaseHelper(getContext());
+
+        // 获取球场信息并设置到适配器中
+        fetchCourts();
+
         return view;
     }
 
-    private void fetchBookings() {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
+    // 从数据库获取球场信息
+    private void fetchCourts() {
+        List<Booking> courtList = getCourtsFromDatabase();
 
-        BookingService bookingService = retrofit.create(BookingService.class);
-        Call<List<Booking>> call = bookingService.getAllBookings();
-        call.enqueue(new Callback<List<Booking>>() {
-            @Override
-            public void onResponse(@NonNull Call<List<Booking>> call, @NonNull Response<List<Booking>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    courtAdapter = new CourtAdapter(response.body(), getContext(), userHasBooking);
-                    recyclerViewCourts.setAdapter(courtAdapter);
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<List<Booking>> call, @NonNull Throwable t) {
-                // Handle failure
-            }
-        });
-
-        BookingList = getCourts();
-        List<Booking> grassCourts = new ArrayList<>();
-        for (Booking court : BookingList) {
+        // 设置草地球场的可用季节
+        for (Booking court : courtList) {
             if ("Grass".equalsIgnoreCase(court.getCourtType())) {
                 court.setAvailableSeason("Open in Summer");
-                grassCourts.add(court);
-            }else {
+            } else {
                 court.setAvailableSeason("Open all year");
             }
         }
 
-        courtAdapter = new CourtAdapter(grassCourts, getContext(), userHasBooking);
+        // 创建适配器并设置给RecyclerView
+        courtAdapter = new CourtAdapter(courtList, getContext(), userHasBooking);
         recyclerViewCourts.setAdapter(courtAdapter);
     }
 
-    private List<Booking> getCourts() {
-        return new ArrayList<>();
+    // 获取所有球场信息
+    private List<Booking> getCourtsFromDatabase() {
+        List<Booking> courtList = new ArrayList<>();
+        Cursor cursor = databaseHelper.getAllCourts();
+
+        if (cursor != null && cursor.moveToFirst()) {
+            do {
+                Booking court = new Booking(
+                        0, // bookingNo
+                        null, // accountNo
+                        null, // memberName
+                        cursor.getString(cursor.getColumnIndex("courtType")),
+                        cursor.getString(cursor.getColumnIndex("courtNo")),
+                        null, // email
+                        null, // phoneNumber
+                        null, // date
+                        0, // dayOfWeek
+                        null, // duration
+                        null  // availableSeason
+                );
+                courtList.add(court);
+            } while (cursor.moveToNext());
+
+            cursor.close();
+        }
+
+        return courtList;
     }
 }

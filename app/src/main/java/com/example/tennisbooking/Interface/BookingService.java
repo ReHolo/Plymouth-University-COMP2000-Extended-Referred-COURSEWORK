@@ -1,7 +1,7 @@
 package com.example.tennisbooking.Interface;
 
 import com.example.tennisbooking.entity.Booking;
-import com.example.tennisbooking.entity.WeatherForecast;
+
 
 import java.util.List;
 
@@ -15,26 +15,25 @@ import retrofit2.http.Path;
 
 public interface BookingService {
 
-    @GET("#/components/schemas/Booking")
+    // 获取所有预订
+    @GET("Bookings")
     Call<List<Booking>> getAllBookings();
 
-    @POST("#/components/schemas/Booking")
+    // 创建新预订
+    @POST("Bookings")
     Call<Booking> createBooking(@Body Booking booking);
 
-    @GET("#/components/schemas/Booking/{bookingNo}")
-    Call<Booking> getBooking();
+    // 根据预订编号获取预订
+    @GET("Bookings/{bookingNo}")
+    Call<Booking> getBooking(@Path("bookingNo") int bookingNo);
 
-    @PUT("#/components/schemas/Booking/{bookingNo}")
+    // 更新指定的预订
+    @PUT("Bookings/{bookingNo}")
     Call<Booking> updateBooking(@Path("bookingNo") int bookingNo, @Body Booking booking);
 
-    @DELETE("#/components/schemas/Booking/{bookingNo}")
+    // 删除指定的预订
+    @DELETE("Bookings/{bookingNo}")
     Call<Void> deleteBooking(@Path("bookingNo") int bookingNo);
-
-    @GET("#/components/schemas/Booking/WeatherForecast")
-    Call<List<WeatherForecast>> getWeatherForecast();
-
-
-
 
 
 }

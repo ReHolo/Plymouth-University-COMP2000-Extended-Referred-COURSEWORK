@@ -14,6 +14,7 @@ import com.example.tennisbooking.entity.WeatherForecast;
 import java.util.List;
 
 public class WeatherAdapter extends RecyclerView.Adapter<WeatherAdapter.WeatherViewHolder> {
+
     private List<WeatherForecast> weatherList;
 
     public WeatherAdapter(List<WeatherForecast> weatherList) {
@@ -23,17 +24,17 @@ public class WeatherAdapter extends RecyclerView.Adapter<WeatherAdapter.WeatherV
     @NonNull
     @Override
     public WeatherViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_weather, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.weather_item, parent, false);
         return new WeatherViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull WeatherViewHolder holder, int position) {
         WeatherForecast weather = weatherList.get(position);
-        holder.dateTextView.setText(weather.getDate());
-        holder.tempCTextView.setText("Temp (C): " + weather.getTemperatureC());
-        holder.tempFTextView.setText("Temp (F): " + weather.getTemperatureF());
-        holder.summaryTextView.setText("Summary: " + weather.getSummary());
+        holder.tvDate.setText(weather.getDate());
+        holder.tvTemperatureC.setText(String.format("Temperature (C): %d", weather.getTemperatureC()));
+        holder.tvTemperatureF.setText(String.format("Temperature (F): %d", weather.getTemperatureF()));
+        holder.tvSummary.setText(String.format("Summary: %s", weather.getSummary()));
     }
 
     @Override
@@ -41,15 +42,16 @@ public class WeatherAdapter extends RecyclerView.Adapter<WeatherAdapter.WeatherV
         return weatherList.size();
     }
 
-    static class WeatherViewHolder extends RecyclerView.ViewHolder {
-        TextView dateTextView, tempCTextView, tempFTextView, summaryTextView;
+    public static class WeatherViewHolder extends RecyclerView.ViewHolder {
+
+        TextView tvDate, tvTemperatureC, tvSummary, tvTemperatureF;
 
         public WeatherViewHolder(@NonNull View itemView) {
             super(itemView);
-            dateTextView = itemView.findViewById(R.id.dateTextView);
-            tempCTextView = itemView.findViewById(R.id.tempCTextView);
-            tempFTextView = itemView.findViewById(R.id.tempFTextView);
-            summaryTextView = itemView.findViewById(R.id.summaryTextView);
+            tvDate = itemView.findViewById(R.id.dateTextView);
+            tvTemperatureC = itemView.findViewById(R.id.tempCTextView);
+            tvTemperatureF = itemView.findViewById(R.id.tempFTextView);
+            tvSummary = itemView.findViewById(R.id.summaryTextView);
         }
     }
 }
