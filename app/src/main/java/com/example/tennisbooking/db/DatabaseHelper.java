@@ -11,7 +11,7 @@ import com.example.tennisbooking.entity.Booking;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "tennisbooking.db";
-    private static final int DATABASE_VERSION = 7;  // 更新版本号
+    private static final int DATABASE_VERSION = 8;  // 更新版本号
 
     // 定义表名和列名
     private static final String TABLE_USERS = "User";
@@ -262,28 +262,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return result;
     }
 
-    // 更新用户的预订状态
+
+
     public void updateUserBookingStatus(String accountNo, boolean hasBooking) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put("hasBooking", hasBooking ? 1 : 0);
-
+        values.put("hasBooking", hasBooking ? 1 : 0);  // 1 表示已预订，0 表示未预订
         db.update("User", values, "accountNo = ?", new String[]{accountNo});
     }
+
 
     // 检查用户是否已有预订
     public boolean userHasBooking(String accountNo) {
         SQLiteDatabase db = this.getReadableDatabase();
-        String query = "SELECT hasBooking FROM User WHERE accountNo = ?";
+        String query = "SELECT * FROM Booking WHERE accountNo = ?";
         Cursor cursor = db.rawQuery(query, new String[]{accountNo});
 
-        if (cursor != null && cursor.moveToFirst()) {
-            int hasBooking = cursor.getInt(cursor.getColumnIndex("hasBooking"));
-            cursor.close();
-            return hasBooking == 1; // 1 表示用户已有预订
-        }
+        boolean hasBooking = cursor.getCount() > 0;
+        cursor.close();
+        return hasBooking;
+    }
 
-        return false; // 用户没有预订记录
+    // 通过 accountNo 删除用户的预订
+    public boolean deleteBookingByAccountNo(String accountNo) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        return db.delete("Booking", "accountNo = ?", new String[]{accountNo}) > 0;
     }
 
     public long addBooking(Booking booking) {

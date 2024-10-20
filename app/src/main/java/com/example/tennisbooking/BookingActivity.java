@@ -77,7 +77,17 @@ public class BookingActivity extends AppCompatActivity {
             }
 
             // 获取当前登录用户的 accountNo
-            String accountNo = databaseHelper.getCurrentUserAccountNo(); // 确保此方法返回当前登录用户的 accountNo
+            String accountNo = databaseHelper.getCurrentUserAccountNo();
+            if (accountNo == null) {
+                Toast.makeText(BookingActivity.this, "Failed to retrieve user account.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // 检查用户是否已有预订
+            if (databaseHelper.userHasBooking(accountNo)) {
+                Toast.makeText(BookingActivity.this, "You already have a booking. Please cancel it first.", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
             // 将预订信息插入到数据库
             long result = databaseHelper.addBooking(accountNo, courtNo, courtType, bookingDate, duration, email, phone);
@@ -87,6 +97,9 @@ public class BookingActivity extends AppCompatActivity {
             } else {
                 // 预订成功提示
                 Toast.makeText(BookingActivity.this, "Court booked successfully!", Toast.LENGTH_SHORT).show();
+
+                // 更新用户预订状态
+                databaseHelper.updateUserBookingStatus(Integer.parseInt(accountNo), true);
 
                 // 完成后关闭活动
                 finish();

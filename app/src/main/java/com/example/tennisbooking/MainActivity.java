@@ -103,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
                     for (Booking user : users) {
                         databaseHelper.addUser(user.getMemberName(), "defaultPassword", user.getPhoneNumber(), user.getEmail());
                     }
-                    Toast.makeText(MainActivity.this, "User data successfully stored", Toast.LENGTH_SHORT).show();
+
                 }
             }
 
@@ -123,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
                     for (Booking booking : bookings) {
                         databaseHelper.addBooking(booking);
                     }
-                    Toast.makeText(MainActivity.this, "The booking data has been successfully stored.", Toast.LENGTH_SHORT).show();
+
                 }
             }
 

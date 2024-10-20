@@ -58,9 +58,16 @@ public class CourtAdapter extends RecyclerView.Adapter<CourtAdapter.CourtViewHol
             // 实例化 DatabaseHelper
             DatabaseHelper databaseHelper = new DatabaseHelper(context);
 
+            // 获取当前用户的账号 ID
             String accountNo = databaseHelper.getCurrentUserAccountNo();
+
+            if (accountNo == null) {
+                Toast.makeText(context, "No logged in user found.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             // 检查用户是否已有预订
-            if (databaseHelper.userHasBooking(accountNo)) {  // accountNo 应该是当前用户的账号
+            if (databaseHelper.userHasBooking(accountNo)) {
                 Toast.makeText(context, "You can only book one court at a time.", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -81,6 +88,7 @@ public class CourtAdapter extends RecyclerView.Adapter<CourtAdapter.CourtViewHol
             intent.putExtra("availableSeason", booking.getAvailableSeason());
             context.startActivity(intent);
         });
+
     }
 
     @Override

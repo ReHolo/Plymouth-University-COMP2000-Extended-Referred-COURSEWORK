@@ -37,57 +37,59 @@ public class ManageBookingActivity extends AppCompatActivity {
         btnUpdateBooking = findViewById(R.id.btnUpdateBooking);
         btnCancelBooking = findViewById(R.id.btnCancelBooking);
 
+        findViewById(R.id.toolbar_booking_management).setOnClickListener(v -> finish());
+
         // Initialize database helper
         databaseHelper = new DatabaseHelper(this);
 
         // Get the current user's account number
         String accountNo = databaseHelper.getCurrentUserAccountNo();
         if (accountNo != null) {
-            loadBookingDetails(accountNo);
+            loadBookingDetails(accountNo);  // Load booking details if user has an account
+        } else {
+            Toast.makeText(this, "No logged-in user found.", Toast.LENGTH_SHORT).show();
+            return;
         }
 
         // Set up Update Booking button click event
-        btnUpdateBooking.setOnClickListener(v -> {
-            showUpdateDialog();
-        });
+        btnUpdateBooking.setOnClickListener(v -> showUpdateDialog());
 
         // Set up Cancel Booking button click event
-        btnCancelBooking.setOnClickListener(v -> {
-            showCancelConfirmationDialog();
-        });
+        btnCancelBooking.setOnClickListener(v -> showCancelConfirmationDialog(accountNo));
     }
 
     // Load booking details from the database
     private void loadBookingDetails(String accountNo) {
         Cursor cursor = databaseHelper.getBookingsByUser(Integer.parseInt(accountNo));
-        int bookingNoIndex = cursor.getColumnIndex("bookingNo");
-        int courtTypeIndex = cursor.getColumnIndex("courtType");
-        int courtNoIndex = cursor.getColumnIndex("courtNo");
-        int bookingDateIndex = cursor.getColumnIndex("bookingDate");
-        int durationIndex = cursor.getColumnIndex("duration");
-        int emailIndex = cursor.getColumnIndex("email");
-        int phoneIndex = cursor.getColumnIndex("phone");
 
-        // Check if the column exists in the cursor
-        if (bookingNoIndex != -1 && courtTypeIndex != -1 && courtNoIndex != -1 && bookingDateIndex != -1 &&
-                durationIndex != -1 && emailIndex != -1 && phoneIndex != -1) {
+        if (cursor != null && cursor.moveToFirst()) {
+            int bookingNoIndex = cursor.getColumnIndex("bookingNo");
+            int courtTypeIndex = cursor.getColumnIndex("courtType");
+            int courtNoIndex = cursor.getColumnIndex("courtNo");
+            int bookingDateIndex = cursor.getColumnIndex("bookingDate");
+            int durationIndex = cursor.getColumnIndex("duration");
+            int emailIndex = cursor.getColumnIndex("email");
+            int phoneIndex = cursor.getColumnIndex("phone");
 
-            // Get the booking details
-            bookingNo = cursor.getString(bookingNoIndex);
-            String courtType = cursor.getString(courtTypeIndex);
-            String courtNo = cursor.getString(courtNoIndex);
-            String bookingDate = cursor.getString(bookingDateIndex);
-            String duration = cursor.getString(durationIndex);
-            String email = cursor.getString(emailIndex);
-            String phone = cursor.getString(phoneIndex);
+            if (bookingNoIndex != -1) {
+                // Load booking details
+                bookingNo = cursor.getString(bookingNoIndex);
+                String courtType = cursor.getString(courtTypeIndex);
+                String courtNo = cursor.getString(courtNoIndex);
+                String bookingDate = cursor.getString(bookingDateIndex);
+                String duration = cursor.getString(durationIndex);
+                String email = cursor.getString(emailIndex);
+                String phone = cursor.getString(phoneIndex);
 
-            // Display the details in the UI
-            tvCourtType.setText("Court Type: " + courtType);
-            tvCourtNo.setText("Court No: " + courtNo);
-            tvBookingDate.setText("Booking Date: " + bookingDate);
-            tvDuration.setText("Duration: " + duration);
-            tvEmail.setText("Email: " + email);
-            tvPhoneNumber.setText("Phone Number: " + phone);
+                // Display details in the UI
+                tvCourtType.setText("Court Type: " + courtType);
+                tvCourtNo.setText("Court No: " + courtNo);
+                tvBookingDate.setText("Booking Date: " + bookingDate);
+                tvDuration.setText("Duration: " + duration);
+                tvEmail.setText("Email: " + email);
+                tvPhoneNumber.setText("Phone Number: " + phone);
+            }
+            cursor.close();
         } else {
             Toast.makeText(this, "No booking found", Toast.LENGTH_SHORT).show();
         }
@@ -129,14 +131,15 @@ public class ManageBookingActivity extends AppCompatActivity {
     }
 
     // Show a confirmation dialog to cancel booking
-    private void showCancelConfirmationDialog() {
+    private void showCancelConfirmationDialog(String accountNo) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Cancel Booking")
                 .setMessage("Are you sure you want to cancel this booking?")
                 .setPositiveButton("Yes", (dialog, which) -> {
-                    boolean isDeleted = databaseHelper.deleteBooking(Integer.parseInt(bookingNo));
+                    boolean isDeleted = databaseHelper.deleteBookingByAccountNo(accountNo);
                     if (isDeleted) {
                         Toast.makeText(ManageBookingActivity.this, "Booking cancelled successfully", Toast.LENGTH_SHORT).show();
+                        databaseHelper.updateUserBookingStatus(accountNo, false);  // Update user status to allow new booking
                         finish(); // Close activity after cancellation
                     } else {
                         Toast.makeText(ManageBookingActivity.this, "Failed to cancel booking", Toast.LENGTH_SHORT).show();
