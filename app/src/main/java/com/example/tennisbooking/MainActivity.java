@@ -2,20 +2,18 @@ package com.example.tennisbooking;
 
 import android.database.Cursor;
 import android.os.Bundle;
+import android.util.SparseArray;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.example.tennisbooking.Interface.BookingService;
+import com.example.tennisbooking.R;
 import com.example.tennisbooking.db.DatabaseHelper;
-import com.example.tennisbooking.entity.User;
 import com.example.tennisbooking.entity.Booking;
 import com.example.tennisbooking.fragment.CourtsFragment;
 import com.example.tennisbooking.fragment.HomeFragment;
@@ -33,67 +31,90 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
-    private HomeFragment mHomeFragment;
-    private CourtsFragment mCourtsFragment;
-    private WeatherFragment mWeatherFragment;
-    private MineFragment mMineFragment;
-
+    private SparseArray<Fragment> fragmentArray = new SparseArray<>();
     private BottomNavigationView mBottomNavigationView;
     private DatabaseHelper databaseHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main);
+        setContentView(com.example.tennisbooking.R.layout.activity_main);
 
-        // 设置Window Insets
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
-
-        // 初始化数据库助手类
+        // Initialize database helper
         databaseHelper = new DatabaseHelper(this);
 
-        // 初始化Retrofit客户端
+        // Initialize Retrofit client
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/")  // 替换为API的基础URL
+                .baseUrl("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         BookingService apiService = retrofit.create(BookingService.class);
 
-        // 获取所有用户数据并存储到数据库
+        // Fetch and store user and booking data
         fetchAndStoreUsers(apiService);
-
-        // 获取所有预订数据并存储到数据库
         fetchAndStoreBookings(apiService);
 
-        // 设置底部导航
-        mBottomNavigationView = findViewById(R.id.bottomNavigationView);
-        mBottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
-            @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                if (item.getItemId() == R.id.home) {
-                    selectedFragment(0);
-                } else if (item.getItemId() == R.id.courts) {
-                    selectedFragment(1);
-                } else if (item.getItemId() == R.id.weather) {
-                    selectedFragment(2);
-                } else if (item.getItemId() == R.id.mine) {
-                    selectedFragment(3);
-                }
-                return true;
-            }
-        });
+        // Initialize fragments
+        fragmentArray.put(R.id.home, new HomeFragment());
+        fragmentArray.put(R.id.courts, new CourtsFragment());
+        fragmentArray.put(R.id.weather, new WeatherFragment());
+        fragmentArray.put(R.id.mine, new MineFragment());
 
-        // 默认选择HomeFragment
-        selectedFragment(0);
+        // Set up bottom navigation
+        mBottomNavigationView = findViewById(R.id.bottomNavigationView);
+        mBottomNavigationView.setOnNavigationItemSelectedListener(this::onNavigationItemSelected);
+
+        // Default to HomeFragment
+        selectedFragment(R.id.home);
     }
 
-    // 获取用户数据并存储到数据库
+    private boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        selectedFragment(item.getItemId());
+        return true;
+    }
+
+    private void selectedFragment(int itemId) {
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        hideAllFragments(fragmentTransaction);
+
+        Fragment selectedFragment = fragmentArray.get(itemId);
+        if (selectedFragment != null) {
+            if (!selectedFragment.isAdded()) {
+                fragmentTransaction.add(R.id.content, selectedFragment);
+            } else {
+                fragmentTransaction.show(selectedFragment);
+            }
+
+            if (itemId == R.id.mine) {
+                // Pass user data to MineFragment
+                String loggedInUsername = getIntent().getStringExtra("memberName");
+                Cursor userCursor = databaseHelper.getUserDetails(loggedInUsername);
+                if (userCursor != null && userCursor.moveToFirst()) {
+                    String memberName = userCursor.getString(userCursor.getColumnIndex("memberName"));
+                    String accountNo = userCursor.getString(userCursor.getColumnIndex("accountNo"));
+                    userCursor.close();
+
+                    Bundle bundle = new Bundle();
+                    bundle.putString("memberName", memberName);
+                    bundle.putString("accountNo", accountNo);
+                    selectedFragment.setArguments(bundle);
+                }
+            }
+        }
+
+        fragmentTransaction.commit();
+    }
+
+    private void hideAllFragments(FragmentTransaction fragmentTransaction) {
+        for (int i = 0; i < fragmentArray.size(); i++) {
+            Fragment fragment = fragmentArray.valueAt(i);
+            if (fragment.isAdded()) {
+                fragmentTransaction.hide(fragment);
+            }
+        }
+    }
+
     private void fetchAndStoreUsers(BookingService apiService) {
         Call<List<Booking>> call = apiService.getAllBookings();
         call.enqueue(new Callback<List<Booking>>() {
@@ -103,7 +124,6 @@ public class MainActivity extends AppCompatActivity {
                     for (Booking user : users) {
                         databaseHelper.addUser(user.getMemberName(), "defaultPassword", user.getPhoneNumber(), user.getEmail());
                     }
-
                 }
             }
 
@@ -113,7 +133,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // 获取预订数据并存储到数据库
     private void fetchAndStoreBookings(BookingService apiService) {
         Call<List<Booking>> call = apiService.getAllBookings();
         call.enqueue(new Callback<List<Booking>>() {
@@ -123,7 +142,6 @@ public class MainActivity extends AppCompatActivity {
                     for (Booking booking : bookings) {
                         databaseHelper.addBooking(booking);
                     }
-
                 }
             }
 
@@ -131,81 +149,5 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "API request failed - booking data", Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    private void selectedFragment(int position) {
-        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        hideFragment(fragmentTransaction);
-
-        if (position == 0) {
-            if (mHomeFragment == null) {
-                mHomeFragment = new HomeFragment();
-                fragmentTransaction.add(R.id.content, mHomeFragment);
-            } else {
-                fragmentTransaction.show(mHomeFragment);
-            }
-        } else if (position == 1) {
-            if (mCourtsFragment == null) {
-                mCourtsFragment = new CourtsFragment();
-                fragmentTransaction.add(R.id.content, mCourtsFragment);
-            } else {
-                fragmentTransaction.show(mCourtsFragment);
-            }
-        } else if (position == 2) {
-            if (mWeatherFragment == null) {
-                mWeatherFragment = new WeatherFragment();
-                fragmentTransaction.add(R.id.content, mWeatherFragment);
-            } else {
-                fragmentTransaction.show(mWeatherFragment);
-            }
-        } else {
-            if (mMineFragment == null) {
-                mMineFragment = new MineFragment();
-                fragmentTransaction.add(R.id.content, mMineFragment);
-            } else {
-                fragmentTransaction.show(mMineFragment);
-            }
-
-            // 获取当前登录用户信息
-            String loggedInUsername = getIntent().getStringExtra("memberName");
-            Cursor userCursor = databaseHelper.getUserDetails(loggedInUsername);
-            String memberName = "";
-            String accountNo = "";
-            if (userCursor != null && userCursor.moveToFirst()) {
-                int memberNameIndex = userCursor.getColumnIndex("memberName");
-                int accountNoIndex = userCursor.getColumnIndex("accountNo");
-
-                if (memberNameIndex != -1) {
-                    memberName = userCursor.getString(memberNameIndex);
-                }
-                if (accountNoIndex != -1) {
-                    accountNo = userCursor.getString(accountNoIndex);
-                }
-                userCursor.close();
-            }
-
-            // 传递用户数据到 MineFragment
-            Bundle bundle = new Bundle();
-            bundle.putString("memberName", memberName);
-            bundle.putString("accountNo", accountNo);
-            mMineFragment.setArguments(bundle);
-        }
-
-        fragmentTransaction.commit();
-    }
-
-    private void hideFragment(FragmentTransaction fragmentTransaction) {
-        if (mHomeFragment != null) {
-            fragmentTransaction.hide(mHomeFragment);
-        }
-        if (mCourtsFragment != null) {
-            fragmentTransaction.hide(mCourtsFragment);
-        }
-        if (mWeatherFragment != null) {
-            fragmentTransaction.hide(mWeatherFragment);
-        }
-        if (mMineFragment != null) {
-            fragmentTransaction.hide(mMineFragment);
-        }
     }
 }
