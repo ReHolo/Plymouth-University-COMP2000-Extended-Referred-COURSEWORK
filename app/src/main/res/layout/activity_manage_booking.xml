@@ -1,0 +1,120 @@
+<!-- activity_manage_bookings.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/white">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar_booking_management"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/my_light_primary"
+        app:title="Manage Bookings"
+        app:navigationIcon="@drawable/baseline_arrow_back_24"
+        app:titleTextColor="@color/white"
+        android:elevation="4dp"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:elevation="4dp"
+            android:background="@drawable/weather_item_background"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:id="@+id/tvBookingDetails"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Booking Details"
+                android:textSize="18sp"
+                android:textColor="@color/black"
+                android:layout_marginBottom="16dp"
+                android:fontFamily="@font/roboto_bold"/>
+
+            <TextView
+                android:id="@+id/tvCourtType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Court Type"
+                android:textColor="@color/black"
+                android:fontFamily="@font/roboto_regular"/>
+
+            <TextView
+                android:id="@+id/tvCourtNo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Court No"
+                android:textColor="@color/black"
+                android:fontFamily="@font/roboto_regular"/>
+
+            <TextView
+                android:id="@+id/tvBookingDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Booking Date"
+                android:textColor="@color/black"
+                android:fontFamily="@font/roboto_regular"/>
+
+            <TextView
+                android:id="@+id/tvDuration"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Duration"
+                android:textColor="@color/black"
+                android:fontFamily="@font/roboto_regular"/>
+
+            <TextView
+                android:id="@+id/tvEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Email"
+                android:textColor="@color/black"
+                android:fontFamily="@font/roboto_regular"/>
+
+            <TextView
+                android:id="@+id/tvPhoneNumber"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Phone Number"
+                android:textColor="@color/black"
+                android:fontFamily="@font/roboto_regular"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp">
+
+                <Button
+                    android:id="@+id/btnUpdateBooking"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Update Booking"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/white"
+                    android:layout_marginEnd="8dp"/>
+
+                <Button
+                    android:id="@+id/btnCancelBooking"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Cancel Booking"
+                    android:background="@drawable/button_background_cancel"
+                    android:textColor="@color/white"
+                    android:layout_marginStart="8dp"/>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

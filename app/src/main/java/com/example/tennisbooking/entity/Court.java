@@ -6,7 +6,7 @@ public class Court {
     private boolean isAvailable;
     private String availableSeason;
 
-    // Getters 和 Setters
+    // Getters and setters
     public int getCourtNo() {
         return courtNo;
     }
@@ -27,8 +27,8 @@ public class Court {
         return isAvailable;
     }
 
-    public void setAvailable(boolean available) {
-        isAvailable = available;
+    public void setIsAvailable(boolean isAvailable) {
+        this.isAvailable = isAvailable;
     }
 
     public String getAvailableSeason() {

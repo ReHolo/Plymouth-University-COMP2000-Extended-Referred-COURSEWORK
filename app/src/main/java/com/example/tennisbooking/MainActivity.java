@@ -1,8 +1,9 @@
 package com.example.tennisbooking;
 
-
+import android.database.Cursor;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -12,11 +13,23 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.example.tennisbooking.Interface.BookingService;
+import com.example.tennisbooking.db.DatabaseHelper;
+import com.example.tennisbooking.entity.User;
+import com.example.tennisbooking.entity.Booking;
 import com.example.tennisbooking.fragment.CourtsFragment;
 import com.example.tennisbooking.fragment.HomeFragment;
 import com.example.tennisbooking.fragment.MineFragment;
 import com.example.tennisbooking.fragment.WeatherFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,53 +39,102 @@ public class MainActivity extends AppCompatActivity {
     private MineFragment mMineFragment;
 
     private BottomNavigationView mBottomNavigationView;
-
+    private DatabaseHelper databaseHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+
+        // 设置Window Insets
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-        mBottomNavigationView = findViewById(R.id.bottomNavigationView);
+        // 初始化数据库助手类
+        databaseHelper = new DatabaseHelper(this);
 
+        // 初始化Retrofit客户端
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/")  // 替换为API的基础URL
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        BookingService apiService = retrofit.create(BookingService.class);
+
+        // 获取所有用户数据并存储到数据库
+        fetchAndStoreUsers(apiService);
+
+        // 获取所有预订数据并存储到数据库
+        fetchAndStoreBookings(apiService);
+
+        // 设置底部导航
+        mBottomNavigationView = findViewById(R.id.bottomNavigationView);
         mBottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-
                 if (item.getItemId() == R.id.home) {
-
                     selectedFragment(0);
-
                 } else if (item.getItemId() == R.id.courts) {
-
                     selectedFragment(1);
-
                 } else if (item.getItemId() == R.id.weather) {
-
                     selectedFragment(2);
-
                 } else if (item.getItemId() == R.id.mine) {
-
                     selectedFragment(3);
-
                 }
                 return true;
             }
         });
 
+        // 默认选择HomeFragment
         selectedFragment(0);
+    }
 
+    // 获取用户数据并存储到数据库
+    private void fetchAndStoreUsers(BookingService apiService) {
+        Call<List<Booking>> call = apiService.getAllBookings();
+        call.enqueue(new Callback<List<Booking>>() {
+            public void onResponse(Call<List<Booking>> call, Response<List<Booking>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Booking> users = response.body();
+                    for (Booking user : users) {
+                        databaseHelper.addUser(user.getMemberName(), "defaultPassword", user.getPhoneNumber(), user.getEmail());
+                    }
+                    Toast.makeText(MainActivity.this, "用户数据已成功存储", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            public void onFailure(Call<List<Booking>> call, Throwable t) {
+                Toast.makeText(MainActivity.this, "API请求失败 - 用户数据", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    // 获取预订数据并存储到数据库
+    private void fetchAndStoreBookings(BookingService apiService) {
+        Call<List<Booking>> call = apiService.getAllBookings();
+        call.enqueue(new Callback<List<Booking>>() {
+            public void onResponse(Call<List<Booking>> call, Response<List<Booking>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Booking> bookings = response.body();
+                    for (Booking booking : bookings) {
+                        databaseHelper.addBooking(booking);
+                    }
+                    Toast.makeText(MainActivity.this, "预订数据已成功存储", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            public void onFailure(Call<List<Booking>> call, Throwable t) {
+                Toast.makeText(MainActivity.this, "API请求失败 - 预订数据", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void selectedFragment(int position) {
-
-        androidx.fragment.app.FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         hideFragment(fragmentTransaction);
 
         if (position == 0) {
@@ -103,15 +165,36 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 fragmentTransaction.show(mMineFragment);
             }
+
+            // 获取当前登录用户信息
+            String loggedInUsername = getIntent().getStringExtra("memberName");
+            Cursor userCursor = databaseHelper.getUserDetails(loggedInUsername);
+            String memberName = "";
+            String accountNo = "";
+            if (userCursor != null && userCursor.moveToFirst()) {
+                int memberNameIndex = userCursor.getColumnIndex("memberName");
+                int accountNoIndex = userCursor.getColumnIndex("accountNo");
+
+                if (memberNameIndex != -1) {
+                    memberName = userCursor.getString(memberNameIndex);
+                }
+                if (accountNoIndex != -1) {
+                    accountNo = userCursor.getString(accountNoIndex);
+                }
+                userCursor.close();
+            }
+
+            // 传递用户数据到 MineFragment
+            Bundle bundle = new Bundle();
+            bundle.putString("memberName", memberName);
+            bundle.putString("accountNo", accountNo);
+            mMineFragment.setArguments(bundle);
         }
 
         fragmentTransaction.commit();
-
-
     }
 
     private void hideFragment(FragmentTransaction fragmentTransaction) {
-
         if (mHomeFragment != null) {
             fragmentTransaction.hide(mHomeFragment);
         }

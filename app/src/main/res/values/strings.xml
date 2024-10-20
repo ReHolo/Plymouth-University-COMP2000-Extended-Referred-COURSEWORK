@@ -64,5 +64,10 @@
     <string name="e_mail">E-mail</string>
     <string name="email">Email</string>
     <string name="phone_number">Phone number</string>
+    <string name="member_name">Member Name</string>
+    <string name="account_no">Account No</string>
+    <string name="date_yyyy_mm_dd">Date (YYYY-MM-DD)</string>
+    <string name="duration">Duration</string>
+    <string name="create_booking">Create Booking</string>
 
 </resources>

@@ -4,4 +4,7 @@
     <color name="white">#FFFFFFFF</color>
 
     <color name="my_light_primary">#649788</color>
+    <color name="my_dark_primary">#FF0000</color> <!-- Example color -->
+    <color name="my_primary">#00FF00</color>
+    <color name="gray">#FF808080</color>
 </resources>

@@ -5,6 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:padding="16dp"
     tools:context=".LoginActivity">
 
     <View
@@ -63,14 +64,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/sign"
-                android:src="@drawable/baseline_account_box_24" />
+                android:src="@drawable/baseline_person_24" />
 
             <EditText
-                android:id="@+id/editTextUsername"
+                android:id="@+id/etMemberName"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:autofillHints="username"
-                android:hint="@string/Username"
+                android:hint="Member Name"
                 android:inputType="text"
                 android:background="@null"/>
 
@@ -108,7 +109,7 @@
         </LinearLayout>
         
         <TextView
-            android:id="@+id/register"
+            android:id="@+id/bt_register"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"

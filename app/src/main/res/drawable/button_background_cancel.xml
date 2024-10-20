@@ -1,0 +1,15 @@
+<!-- res/drawable/button_background_cancel.xml -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape>
+            <solid android:color="#D32F2F"/> <!-- Darker red for pressed state -->
+            <corners android:radius="8dp"/>
+        </shape>
+    </item>
+    <item>
+        <shape>
+            <solid android:color="#F44336"/> <!-- Red color -->
+            <corners android:radius="8dp"/>
+        </shape>
+    </item>
+</selector>

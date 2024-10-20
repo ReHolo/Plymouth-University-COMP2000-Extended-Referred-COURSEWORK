@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/white">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar_booking"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:title="Booking"
+        app:navigationIcon="@drawable/baseline_arrow_back_24"
+        app:titleTextColor="@color/white"
+        android:background="@color/my_light_primary"/>
+
+    <TextView
+        android:id="@+id/courtDetails"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Court Details"
+        android:textSize="18sp"
+        android:textColor="@android:color/black"
+        android:padding="8dp"
+        android:layout_marginBottom="16dp" />
+
+
+
+    <EditText
+        android:id="@+id/etEmail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter your email"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/login_et_bg" />
+
+    <EditText
+        android:id="@+id/etPhoneNumber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter your phone number"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/login_et_bg" />
+
+    <EditText
+        android:id="@+id/etBookingDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter booking date (yyyy-MM-dd HH:mm)"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/login_et_bg" />
+
+
+    <EditText
+        android:id="@+id/etDuration"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter duration (e.g., 1 hour)"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/login_et_bg" />
+
+    <Button
+        android:id="@+id/btnConfirmBooking"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Confirm Booking"
+        android:padding="12dp"
+        android:backgroundTint="@color/my_light_primary"
+        android:textColor="@android:color/white" />
+
+</LinearLayout>

@@ -1,12 +1,11 @@
-package com.example.tennisbooking.entity;
+package com.example.tennisbooking.API;
 
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class RetrofitClient {
-    public static Retrofit retrofit = null;
-
-    private static final String BASE_URL = "https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api";
+public class ApiClient {
+    private static final String BASE_URL = "https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/";
+    private static Retrofit retrofit;
 
     public static Retrofit getClient() {
         if (retrofit == null) {

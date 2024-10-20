@@ -1,67 +1,86 @@
+// CourtsFragment.java
 package com.example.tennisbooking.fragment;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.example.tennisbooking.R;
-import com.example.tennisbooking.entity.Court;
-import com.example.tennisbooking.entity.CourtDAO;
-
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import com.example.tennisbooking.R;
+import com.example.tennisbooking.adapter.CourtAdapter;
+import com.example.tennisbooking.Interface.BookingService;
+import com.example.tennisbooking.entity.Booking;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class CourtsFragment extends Fragment {
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
-    private LinearLayout courtsContainer;
-    private CourtDAO courtDAO;
+public class CourtsFragment extends Fragment {
+    private RecyclerView recyclerViewCourts;
+    private CourtAdapter courtAdapter;
+    private List<Booking> BookingList;
+    private boolean userHasBooking = false; // This should be set based on actual user data
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_courts, container, false);
-
-        // 设置 Toolbar
-        Toolbar toolbar = view.findViewById(R.id.toolbar);
-        ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
-
-        courtsContainer = view.findViewById(R.id.courtsContainer);
-        courtDAO = new CourtDAO(getActivity());
-
-        // 加载球场信息
-        loadCourtData();
-
+        recyclerViewCourts = view.findViewById(R.id.recyclerView);
+        recyclerViewCourts.setLayoutManager(new LinearLayoutManager(getContext()));
+        fetchBookings();
         return view;
     }
 
-    private void loadCourtData() {
-        List<Court> courts = courtDAO.getAllCourts();
+    private void fetchBookings() {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
 
-        for (Court court : courts) {
-            // 创建一个新的 TextView 来显示每个球场的详细信息
-            TextView courtInfoTextView = new TextView(getActivity());
-            String courtInfo = "球场编号: " + court.getCourtNo() + "\n" +
-                    "球场类型: " + court.getCourtType() + "\n" +
-                    "是否可用: " + (court.isAvailable() ? "是" : "否") + "\n" +
-                    "开放季节: " + court.getAvailableSeason() + "\n";
-            courtInfoTextView.setText(courtInfo);
-            courtInfoTextView.setTextSize(16);
-            courtInfoTextView.setPadding(0, 0, 0, 16);
+        BookingService bookingService = retrofit.create(BookingService.class);
+        Call<List<Booking>> call = bookingService.getAllBookings();
+        call.enqueue(new Callback<List<Booking>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<Booking>> call, @NonNull Response<List<Booking>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    courtAdapter = new CourtAdapter(response.body(), getContext(), userHasBooking);
+                    recyclerViewCourts.setAdapter(courtAdapter);
+                }
+            }
 
-            // 将每个 TextView 添加到 courtsContainer 中
-            courtsContainer.addView(courtInfoTextView);
+            @Override
+            public void onFailure(@NonNull Call<List<Booking>> call, @NonNull Throwable t) {
+                // Handle failure
+            }
+        });
+
+        BookingList = getCourts();
+        List<Booking> grassCourts = new ArrayList<>();
+        for (Booking court : BookingList) {
+            if ("Grass".equalsIgnoreCase(court.getCourtType())) {
+                court.setAvailableSeason("Open in Summer");
+                grassCourts.add(court);
+            }else {
+                court.setAvailableSeason("Open all year");
+            }
         }
+
+        courtAdapter = new CourtAdapter(grassCourts, getContext(), userHasBooking);
+        recyclerViewCourts.setAdapter(courtAdapter);
+    }
+
+    private List<Booking> getCourts() {
+        return new ArrayList<>();
     }
 }

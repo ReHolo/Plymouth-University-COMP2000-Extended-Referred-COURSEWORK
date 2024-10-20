@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context=".fragment.WeatherFragment">
+
+    android:orientation="vertical" >
 
     <androidx.appcompat.widget.Toolbar
         android:layout_width="match_parent"
@@ -13,14 +13,8 @@
         app:title="@string/weather"
         app:titleTextColor="@color/white"/>
 
-    <TextView
-        android:id="@+id/weatherTextView"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="@string/loading"
-        android:textSize="18sp"
-        android:padding="16dp" />
-
-
-</FrameLayout>
+        android:layout_height="match_parent" />
+</LinearLayout>
