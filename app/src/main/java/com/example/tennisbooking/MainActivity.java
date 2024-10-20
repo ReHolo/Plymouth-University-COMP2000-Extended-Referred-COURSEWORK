@@ -97,18 +97,18 @@ public class MainActivity extends AppCompatActivity {
     private void fetchAndStoreUsers(BookingService apiService) {
         Call<List<Booking>> call = apiService.getAllBookings();
         call.enqueue(new Callback<List<Booking>>() {
-            public void onResponse(Call<List<Booking>> call, Response<List<Booking>> response) {
+            public void onResponse(@NonNull Call<List<Booking>> call, @NonNull Response<List<Booking>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Booking> users = response.body();
                     for (Booking user : users) {
                         databaseHelper.addUser(user.getMemberName(), "defaultPassword", user.getPhoneNumber(), user.getEmail());
                     }
-                    Toast.makeText(MainActivity.this, "用户数据已成功存储", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "User data successfully stored", Toast.LENGTH_SHORT).show();
                 }
             }
 
-            public void onFailure(Call<List<Booking>> call, Throwable t) {
-                Toast.makeText(MainActivity.this, "API请求失败 - 用户数据", Toast.LENGTH_SHORT).show();
+            public void onFailure(@NonNull Call<List<Booking>> call, Throwable t) {
+                Toast.makeText(MainActivity.this, "API request failed - user data", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -117,18 +117,18 @@ public class MainActivity extends AppCompatActivity {
     private void fetchAndStoreBookings(BookingService apiService) {
         Call<List<Booking>> call = apiService.getAllBookings();
         call.enqueue(new Callback<List<Booking>>() {
-            public void onResponse(Call<List<Booking>> call, Response<List<Booking>> response) {
+            public void onResponse(@NonNull Call<List<Booking>> call, @NonNull Response<List<Booking>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Booking> bookings = response.body();
                     for (Booking booking : bookings) {
                         databaseHelper.addBooking(booking);
                     }
-                    Toast.makeText(MainActivity.this, "预订数据已成功存储", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "The booking data has been successfully stored.", Toast.LENGTH_SHORT).show();
                 }
             }
 
             public void onFailure(Call<List<Booking>> call, Throwable t) {
-                Toast.makeText(MainActivity.this, "API请求失败 - 预订数据", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "API request failed - booking data", Toast.LENGTH_SHORT).show();
             }
         });
     }

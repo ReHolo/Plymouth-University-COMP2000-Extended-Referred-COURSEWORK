@@ -48,7 +48,7 @@ public class CourtAdapter extends RecyclerView.Adapter<CourtAdapter.CourtViewHol
         if ("Grass".equalsIgnoreCase(booking.getCourtType())) {
             holder.tvAvailableSeason.setText("Available Season: Open in Summer");
         } else {
-            holder.tvAvailableSeason.setText("Available Season: " + booking.getAvailableSeason());
+            holder.tvAvailableSeason.setText("Available Season: All Year" );
         }
 
 
