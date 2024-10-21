@@ -32,10 +32,10 @@ public class BookingActivityTest {
         bookingActivity.databaseHelper = databaseHelper;
 
         // Mocking the Intent to provide court information
-        Intent intent = mock(Intent.class);
-        when(intent.getStringExtra("courtNo")).thenReturn("1");
-        when(intent.getStringExtra("courtType")).thenReturn("Grass");
-        when(intent.getStringExtra("availableSeason")).thenReturn("Open in Summer");
+        Intent intent = Mockito.mock(Intent.class);
+        Mockito.when(intent.getStringExtra("courtNo")).thenReturn("1");
+        Mockito.when(intent.getStringExtra("courtType")).thenReturn("Grass");
+        Mockito.when(intent.getStringExtra("availableSeason")).thenReturn("Open in Summer");
         bookingActivity.setIntent(intent);
     }
 
@@ -70,9 +70,9 @@ public class BookingActivityTest {
     @Test
     public void testAddBooking_Successful() {
         // Mock database methods
-        when(databaseHelper.getCurrentUserAccountNo()).thenReturn("1");
-        when(databaseHelper.userHasBooking(1)).thenReturn(false);
-        when(databaseHelper.addBooking(any(Booking.class))).thenReturn(1L);
+        Mockito.when(databaseHelper.getCurrentUserAccountNo()).thenReturn("1");
+        Mockito.when(databaseHelper.userHasBooking(1)).thenReturn(false);
+        Mockito.when(databaseHelper.addBooking(ArgumentMatchers.any(Booking.class))).thenReturn(1L);
 
         // Simulate user input
         setFieldValue("etEmail", "test@example.com");
@@ -84,15 +84,15 @@ public class BookingActivityTest {
         bookingActivity.btnConfirmBooking.performClick();
 
         // Verify booking added
-        verify(databaseHelper).addBooking(any(Booking.class));
-        verify(databaseHelper).updateUserBookingStatus(1, true);
+        Mockito.verify(databaseHelper).addBooking(ArgumentMatchers.any(Booking.class));
+        Mockito.verify(databaseHelper).updateUserBookingStatus(1, true);
     }
 
     @Test
     public void testAddBooking_Failed_AlreadyHasBooking() {
         // Mock database methods
-        when(databaseHelper.getCurrentUserAccountNo()).thenReturn("1");
-        when(databaseHelper.userHasBooking(1)).thenReturn(true);
+        Mockito.when(databaseHelper.getCurrentUserAccountNo()).thenReturn("1");
+        Mockito.when(databaseHelper.userHasBooking(1)).thenReturn(true);
 
         // Simulate user input
         setFieldValue("etEmail", "test@example.com");
@@ -104,8 +104,8 @@ public class BookingActivityTest {
         bookingActivity.btnConfirmBooking.performClick();
 
         // Verify booking was not added due to existing booking
-        verify(databaseHelper, never()).addBooking(any(Booking.class));
-        verify(databaseHelper, never()).updateUserBookingStatus(anyInt(), anyBoolean());
+        Mockito.verify(databaseHelper, Mockito.never()).addBooking(ArgumentMatchers.any(Booking.class));
+        Mockito.verify(databaseHelper, Mockito.never()).updateUserBookingStatus(ArgumentMatchers.anyInt(), ArgumentMatchers.anyBoolean());
     }
 
     // Helper method to invoke private methods
