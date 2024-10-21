@@ -339,14 +339,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return rowsDeleted > 0;
     }
 
-    public void addBooking(Booking booking) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put("memberName", booking.getMemberName());
-        values.put("courtNo", booking.getCourtNo());
-        db.insert("Booking", null, values);
-        db.close();
-    }
+
 
     public Cursor getBookingsByUser(int accountNo) {
         SQLiteDatabase db = this.getReadableDatabase();
@@ -376,5 +369,24 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
     return courts;
 }
+
+    public long addBooking(Booking booking) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_ACCOUNT_NO, booking.getAccountNo());
+        values.put(COLUMN_COURT_NO, booking.getCourtNo());
+        values.put(COLUMN_COURT_TYPE, booking.getCourtType());
+        values.put(COLUMN_BOOKING_DATE, booking.getDate());
+        values.put(COLUMN_DURATION, booking.getDuration());
+        values.put(COLUMN_EMAIL, booking.getEmail());
+        values.put(COLUMN_PHONE, booking.getPhoneNumber());
+        values.put(COLUMN_MEMBER_NAME, booking.getMemberName());
+        values.put(COLUMN_DAY_OF_WEEK, booking.getDayOfWeek());
+
+        long result = db.insert(TABLE_BOOKINGS, null, values);
+        db.close();
+        return result;
+    }
+
 
 }

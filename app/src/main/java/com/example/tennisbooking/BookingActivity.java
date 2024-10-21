@@ -128,8 +128,16 @@ public class BookingActivity extends AppCompatActivity {
     }
 
     private void submitBooking(Booking booking) {
-        databaseHelper.addBookingToApi(booking, result -> {
-            if (result != 1L) {
+        // Store booking data in the local database
+        long result = databaseHelper.addBooking(booking);
+        if (result == -1) {
+            showToast("Failed to store booking data locally. Please try again.");
+            return;
+        }
+
+        // Submit booking data to the API
+        databaseHelper.addBookingToApi(booking, apiResult -> {
+            if (apiResult != 1L) {
                 showToast("Failed to book court. Please try again.");
             } else {
                 showToast("Court booked successfully!");
