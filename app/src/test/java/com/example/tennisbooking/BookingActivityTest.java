@@ -1,7 +1,6 @@
 package com.example.tennisbooking;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 import android.content.Intent;
 
@@ -11,7 +10,9 @@ import com.example.tennisbooking.entity.Booking;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
