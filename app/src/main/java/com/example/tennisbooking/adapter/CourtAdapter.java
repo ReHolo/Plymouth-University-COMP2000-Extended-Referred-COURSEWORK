@@ -15,20 +15,18 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.tennisbooking.BookingActivity;
 import com.example.tennisbooking.R;
 import com.example.tennisbooking.db.DatabaseHelper;
-import com.example.tennisbooking.entity.Booking;
+import com.example.tennisbooking.entity.Court;
 
 import java.util.Calendar;
 import java.util.List;
 
 public class CourtAdapter extends RecyclerView.Adapter<CourtAdapter.CourtViewHolder> {
-    private List<Booking> bookingList;
+    private List<Court> courtList;
     private Context context;
-    private boolean userHasBooking;  // 表示用户是否已经预订
 
-    public CourtAdapter(List<Booking> bookingList, Context context, boolean userHasBooking) {
-        this.bookingList = bookingList;
+    public CourtAdapter(List<Court> courtList, Context context) {
+        this.courtList = courtList;
         this.context = context;
-        this.userHasBooking = userHasBooking;
     }
 
     @NonNull
@@ -40,18 +38,16 @@ public class CourtAdapter extends RecyclerView.Adapter<CourtAdapter.CourtViewHol
 
     @Override
     public void onBindViewHolder(@NonNull CourtViewHolder holder, int position) {
-        Booking booking = bookingList.get(position);
-        holder.tvCourtNo.setText("Court No: " + booking.getCourtNo());
-        holder.tvCourtType.setText("Court Type: " + booking.getCourtType());
+        Court court = courtList.get(position);
+        holder.tvCourtNo.setText("Court No: " + court.getCourtNo());
+        holder.tvCourtType.setText("Court Type: " + court.getCourtType());
 
         // 根据场地类型设置可用季节
-        if ("Grass".equalsIgnoreCase(booking.getCourtType())) {
+        if ("Grass".equalsIgnoreCase(court.getCourtType())) {
             holder.tvAvailableSeason.setText("Available Season: Open in Summer");
         } else {
-            holder.tvAvailableSeason.setText("Available Season: All Year" );
+            holder.tvAvailableSeason.setText("Available Season: All Year");
         }
-
-
 
         // 点击预订按钮
         holder.btnBookCourt.setOnClickListener(v -> {
@@ -76,24 +72,23 @@ public class CourtAdapter extends RecyclerView.Adapter<CourtAdapter.CourtViewHol
             Calendar calendar = Calendar.getInstance();
             int month = calendar.get(Calendar.MONTH) + 1; // Calendar 月份从 0 开始，需加 1
 
-            if ("Grass".equalsIgnoreCase(booking.getCourtType()) && (month < 7 || month > 9)) {
+            if ("Grass".equalsIgnoreCase(court.getCourtType()) && (month < 7 || month > 9)) {
                 Toast.makeText(context, "Grass courts can only be booked in July, August, and September.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             // 跳转到 BookingActivity 并传递球场信息
             Intent intent = new Intent(context, BookingActivity.class);
-            intent.putExtra("courtNo", booking.getCourtNo());
-            intent.putExtra("courtType", booking.getCourtType());
-            intent.putExtra("availableSeason", booking.getAvailableSeason());
+            intent.putExtra("courtNo", court.getCourtNo());
+            intent.putExtra("courtType", court.getCourtType());
+            intent.putExtra("availableSeason", court.getAvailableSeason());
             context.startActivity(intent);
         });
-
     }
 
     @Override
     public int getItemCount() {
-        return bookingList.size();
+        return courtList.size();
     }
 
     public static class CourtViewHolder extends RecyclerView.ViewHolder {

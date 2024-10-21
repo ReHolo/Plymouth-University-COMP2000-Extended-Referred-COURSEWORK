@@ -7,6 +7,10 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import com.example.tennisbooking.entity.Booking;
+import com.example.tennisbooking.entity.Court;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 
@@ -16,6 +20,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     // 定义表名和列名
     private static final String TABLE_USERS = "User";
     private static final String TABLE_BOOKINGS = "Booking";
+    private static final String TABLE_COURTS = "Court";
 
     private static final String COLUMN_ACCOUNT_NO = "accountNo";
     private static final String COLUMN_MEMBER_NAME = "memberName";
@@ -25,12 +30,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_HAS_BOOKING = "hasBooking";
 
     private static final String COLUMN_BOOKING_NO = "bookingNo";
-    private static final String COLUMN_ACCOUNT_NO_FK = "accountNo";  // 外键
-    private static final String COLUMN_COURT_NO = "courtNo";  // courtNo 列
+    private static final String COLUMN_ACCOUNT_NO_FK = "accountNo";
+    private static final String COLUMN_COURT_NO = "courtNo";
     private static final String COLUMN_COURT_TYPE = "courtType";
     private static final String COLUMN_BOOKING_DATE = "bookingDate";
     private static final String COLUMN_DURATION = "duration";
-    private static final String COLUMN_EMAIL_BOOKING = "email";  // Booking 表中的 email 列
+    private static final String COLUMN_EMAIL_BOOKING = "email";
     private static final String COLUMN_PHONE_BOOKING = "phone";  // Booking 表中的 phone 列
 
     // SQL statements to create tables
@@ -56,6 +61,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             + "FOREIGN KEY(" + COLUMN_ACCOUNT_NO_FK + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_ACCOUNT_NO + ")"
             + ")";
 
+    private static final String CREATE_TABLE_COURTS = "CREATE TABLE " + TABLE_COURTS + "("
+            + "courtNo TEXT PRIMARY KEY,"
+            + "courtType TEXT NOT NULL"
+            + ")";
+
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
@@ -63,7 +73,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(CREATE_TABLE_USERS);  // 创建 Users 表
-        db.execSQL(CREATE_TABLE_BOOKINGS);  // 创建 Bookings 表
+        db.execSQL(CREATE_TABLE_BOOKINGS);
+        db.execSQL(CREATE_TABLE_COURTS);
+        insertInitialCourts(db);// 创建 Bookings 表
+    }
+
+    private void insertInitialCourts(SQLiteDatabase db) {
+        insertCourt(db, "1", "Artificial Grass");
+        insertCourt(db, "2", "Artificial Grass");
+        insertCourt(db, "3", "Artificial Grass");
+        insertCourt(db, "4", "Artificial Grass");
+        insertCourt(db, "5", "Hard Court");
+        insertCourt(db, "6", "Hard Court");
+        insertCourt(db, "7", "Grass");
+        insertCourt(db, "8", "Grass");
+        insertCourt(db, "9", "Grass");
+        insertCourt(db, "10", "Grass");
+    }
+
+    private void insertCourt(SQLiteDatabase db, String courtNo, String courtType) {
+        ContentValues values = new ContentValues();
+        values.put("courtNo", courtNo);
+        values.put("courtType", courtType);
+        db.insert("Court", null, values);
     }
 
     @Override
@@ -305,6 +337,26 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // 插入数据到 Booking 表
         return db.insert("Booking", null, values);
     }
+    public List<Court> getAllCourts() {
+    List<Court> courts = new ArrayList<>();
+    SQLiteDatabase db = this.getReadableDatabase();
+    Cursor cursor = db.query("Court", null, null, null, null, null, null);
+
+    if (cursor != null && cursor.moveToFirst()) {
+        do {
+            int courtNoIndex = cursor.getColumnIndex("courtNo");
+            int courtTypeIndex = cursor.getColumnIndex("courtType");
+
+            if (courtNoIndex != -1 && courtTypeIndex != -1) {
+                String courtNo = cursor.getString(courtNoIndex);
+                String courtType = cursor.getString(courtTypeIndex);
+                courts.add(new Court(Integer.parseInt(courtNo), courtType, true, "All Seasons"));
+            }
+        } while (cursor.moveToNext());
+        cursor.close();
+    }
+    return courts;
+}
 
 
 

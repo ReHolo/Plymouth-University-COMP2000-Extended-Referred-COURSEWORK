@@ -15,6 +15,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.tennisbooking.db.DatabaseHelper;
 
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
 public class ManageBookingActivity extends AppCompatActivity {
 
     private TextView tvCourtType, tvCourtNo, tvBookingDate, tvDuration, tvEmail, tvPhoneNumber;
@@ -118,6 +122,7 @@ public class ManageBookingActivity extends AppCompatActivity {
                             tvEmail.setText(newEmail);
                             tvPhoneNumber.setText(newPhone);
                             Toast.makeText(ManageBookingActivity.this, "Booking updated successfully", Toast.LENGTH_SHORT).show();
+                            sendUpdatedBookingDataToApi(bookingNo, newEmail, newPhone);
                         } else {
                             Toast.makeText(ManageBookingActivity.this, "Failed to update booking", Toast.LENGTH_SHORT).show();
                         }
@@ -140,6 +145,7 @@ public class ManageBookingActivity extends AppCompatActivity {
                     if (isDeleted) {
                         Toast.makeText(ManageBookingActivity.this, "Booking cancelled successfully", Toast.LENGTH_SHORT).show();
                         databaseHelper.updateUserBookingStatus(accountNo, false);  // Update user status to allow new booking
+                        sendCancelBookingDataToApi(bookingNo);
                         finish(); // Close activity after cancellation
                     } else {
                         Toast.makeText(ManageBookingActivity.this, "Failed to cancel booking", Toast.LENGTH_SHORT).show();
@@ -148,5 +154,57 @@ public class ManageBookingActivity extends AppCompatActivity {
                 .setNegativeButton("No", null)
                 .create()
                 .show();
+    }
+
+    // Send updated booking data to API
+    private void sendUpdatedBookingDataToApi(String bookingNo, String newEmail, String newPhone) {
+        try {
+            URL url = new URL("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/" + bookingNo);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("PUT");
+            conn.setRequestProperty("Content-Type", "application/json; utf-8");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+
+            String jsonInputString = String.format(
+                "{\"email\": \"%s\", \"phone\": \"%s\"}",
+                newEmail, newPhone
+            );
+
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+
+            int code = conn.getResponseCode();
+            if (code == HttpURLConnection.HTTP_OK) {
+                Toast.makeText(this, "Booking data updated in API successfully!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Failed to update booking data in API.", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error updating booking data in API.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Send cancel booking data to API
+    private void sendCancelBookingDataToApi(String bookingNo) {
+        try {
+            URL url = new URL("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/" + bookingNo);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("DELETE");
+            conn.setRequestProperty("Accept", "application/json");
+
+            int code = conn.getResponseCode();
+            if (code == HttpURLConnection.HTTP_OK) {
+                Toast.makeText(this, "Booking data deleted in API successfully!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Failed to delete booking data in API.", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error deleting booking data in API.", Toast.LENGTH_SHORT).show();
+        }
     }
 }

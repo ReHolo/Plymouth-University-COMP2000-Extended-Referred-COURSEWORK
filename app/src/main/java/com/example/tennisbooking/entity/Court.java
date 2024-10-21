@@ -6,6 +6,13 @@ public class Court {
     private boolean isAvailable;
     private String availableSeason;
 
+    public Court(int courtNo, String courtType, boolean isAvailable, String availableSeason) {
+        this.courtNo = courtNo;
+        this.courtType = courtType;
+        this.isAvailable = isAvailable;
+        this.availableSeason = availableSeason;
+    }
+
     // Getters and setters
     public int getCourtNo() {
         return courtNo;
