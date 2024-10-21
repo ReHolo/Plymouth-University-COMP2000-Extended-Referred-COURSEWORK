@@ -83,5 +83,6 @@ public class LoginActivity extends AppCompatActivity {
                 Toast.makeText(this, "Invalid credentials. Please try again.", Toast.LENGTH_SHORT).show();
             }
         });
+
     }
 }

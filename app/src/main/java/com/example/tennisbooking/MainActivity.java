@@ -34,6 +34,8 @@ public class MainActivity extends AppCompatActivity {
     private SparseArray<Fragment> fragmentArray = new SparseArray<>();
     private BottomNavigationView mBottomNavigationView;
     private DatabaseHelper databaseHelper;
+    private String accountNo;
+    private String memberName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Default to HomeFragment
         selectedFragment(R.id.home);
+
     }
 
     private boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -90,15 +93,20 @@ public class MainActivity extends AppCompatActivity {
                 // Pass user data to MineFragment
                 String loggedInUsername = getIntent().getStringExtra("memberName");
                 Cursor userCursor = databaseHelper.getUserDetails(loggedInUsername);
-                if (userCursor != null && userCursor.moveToFirst()) {
-                    String memberName = userCursor.getString(userCursor.getColumnIndex("memberName"));
-                    String accountNo = userCursor.getString(userCursor.getColumnIndex("accountNo"));
-                    userCursor.close();
+                if (userCursor != null) {
+                    try {
+                        if (userCursor.moveToFirst()) {
+                            memberName = userCursor.getString(userCursor.getColumnIndex("memberName"));
+                            accountNo = userCursor.getString(userCursor.getColumnIndex("accountNo"));
 
-                    Bundle bundle = new Bundle();
-                    bundle.putString("memberName", memberName);
-                    bundle.putString("accountNo", accountNo);
-                    selectedFragment.setArguments(bundle);
+                            Bundle bundle = new Bundle();
+                            bundle.putString("memberName", memberName);
+                            bundle.putString("accountNo", accountNo);
+                            selectedFragment.setArguments(bundle);
+                        }
+                    } finally {
+                        userCursor.close();
+                    }
                 }
             }
         }

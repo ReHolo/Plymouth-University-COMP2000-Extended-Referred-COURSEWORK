@@ -24,7 +24,7 @@ import java.util.List;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "tennisbooking.db";
-    private static final int DATABASE_VERSION = 9;
+    private static final int DATABASE_VERSION = 13;
 
     // Define table and column names
     private static final String TABLE_USERS = "User";
@@ -66,6 +66,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_IS_LOGGED_IN + " INTEGER DEFAULT 0"
                 + ")");
 
+        // 创建预订表
         db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_BOOKINGS + "("
                 + COLUMN_BOOKING_NO + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + COLUMN_ACCOUNT_NO_FK + " INTEGER,"
@@ -76,13 +77,34 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_EMAIL_BOOKING + " TEXT,"
                 + COLUMN_PHONE_BOOKING + " TEXT,"
                 + COLUMN_DAY_OF_WEEK + " INTEGER,"
+                + COLUMN_MEMBER_NAME + " TEXT,"
                 + "FOREIGN KEY(" + COLUMN_ACCOUNT_NO_FK + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_ACCOUNT_NO + ")"
                 + ")");
-
+        // 创建球场表
         db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_COURTS + "("
                 + "courtNo TEXT PRIMARY KEY,"
                 + "courtType TEXT NOT NULL"
                 + ")");
+
+
+
+        // 更新触发器：同步更新 memberName
+        db.execSQL("CREATE TRIGGER after_user_update "
+                + "AFTER UPDATE ON " + TABLE_USERS + " "
+                + "FOR EACH ROW "
+                + "BEGIN "
+                + "UPDATE " + TABLE_BOOKINGS + " SET " + COLUMN_MEMBER_NAME + " = NEW." + COLUMN_MEMBER_NAME + " "
+                + "WHERE " + COLUMN_ACCOUNT_NO_FK + " = OLD." + COLUMN_ACCOUNT_NO + "; "
+                + "END;");
+
+        // 删除触发器：同步删除 memberName
+        db.execSQL("CREATE TRIGGER after_user_delete "
+                + "AFTER DELETE ON " + TABLE_USERS + " "
+                + "FOR EACH ROW "
+                + "BEGIN "
+                + "UPDATE " + TABLE_BOOKINGS + " SET " + COLUMN_MEMBER_NAME + " = NULL "
+                + "WHERE " + COLUMN_ACCOUNT_NO_FK + " = OLD." + COLUMN_ACCOUNT_NO + "; "
+                + "END;");
 
         insertInitialCourts(db);
     }
@@ -114,23 +136,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion < 6) {
-            // 检查是否存在 dayOfWeek 列
-            Cursor cursor = db.rawQuery("PRAGMA table_info(Booking)", null);
-            boolean columnExists = false;
-            while (cursor.moveToNext()) {
-                String columnName = cursor.getString(cursor.getColumnIndex("name"));
-                if ("dayOfWeek".equals(columnName)) {
-                    columnExists = true;
-                    break;
-                }
-            }
-            cursor.close();
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_BOOKINGS);
+        // 可以添加更多表的删除语句（如果有其他表格）
 
-            if (!columnExists) {
-                db.execSQL("ALTER TABLE Booking ADD COLUMN dayOfWeek INTEGER");
-            }
-        }
+        // 重新创建所有表格
+        onCreate(db);
+
+
     }
 
     // Add user to the database
@@ -174,8 +186,32 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     // Add booking to the API
 
 
-    public void addBookingToApi(Booking booking, BookingCallback callback) {
-        new AddBookingTask(callback).execute(booking);
+
+
+    public Booking getBookingByAccountNo(int accountNo) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT * FROM " + TABLE_BOOKINGS + " WHERE " + COLUMN_ACCOUNT_NO_FK + " = ?";
+        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(accountNo)});
+
+        if (cursor != null && cursor.moveToFirst()) {
+            int bookingNo = cursor.getInt(cursor.getColumnIndex(COLUMN_BOOKING_NO));
+            String courtNo = cursor.getString(cursor.getColumnIndex(COLUMN_COURT_NO));
+            String courtType = cursor.getString(cursor.getColumnIndex(COLUMN_COURT_TYPE));
+            String bookingDate = cursor.getString(cursor.getColumnIndex(COLUMN_BOOKING_DATE));
+            String duration = cursor.getString(cursor.getColumnIndex(COLUMN_DURATION));
+            String email = cursor.getString(cursor.getColumnIndex(COLUMN_EMAIL_BOOKING));
+            String phone = cursor.getString(cursor.getColumnIndex(COLUMN_PHONE_BOOKING));
+            String memberName = cursor.getString(cursor.getColumnIndex(COLUMN_MEMBER_NAME));
+            int dayOfWeek = cursor.getInt(cursor.getColumnIndex(COLUMN_DAY_OF_WEEK));
+
+            cursor.close();
+            return new Booking(bookingNo, String.valueOf(accountNo), courtNo, courtType, bookingDate, duration, email, phone, memberName, dayOfWeek);
+        }
+
+        if (cursor != null) {
+            cursor.close();
+        }
+        return null;
     }
 
 
@@ -373,19 +409,41 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public long addBooking(Booking booking) {
         SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_ACCOUNT_NO, booking.getAccountNo());
-        values.put(COLUMN_COURT_NO, booking.getCourtNo());
-        values.put(COLUMN_COURT_TYPE, booking.getCourtType());
-        values.put(COLUMN_BOOKING_DATE, booking.getDate());
-        values.put(COLUMN_DURATION, booking.getDuration());
-        values.put(COLUMN_EMAIL, booking.getEmail());
-        values.put(COLUMN_PHONE, booking.getPhoneNumber());
-        values.put(COLUMN_MEMBER_NAME, booking.getMemberName());
-        values.put(COLUMN_DAY_OF_WEEK, booking.getDayOfWeek());
+        long result = -1;
 
-        long result = db.insert(TABLE_BOOKINGS, null, values);
-        db.close();
+        db.beginTransaction();
+        try {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_ACCOUNT_NO, booking.getAccountNo());
+            values.put(COLUMN_COURT_NO, booking.getCourtNo());
+            values.put(COLUMN_COURT_TYPE, booking.getCourtType());
+            values.put(COLUMN_BOOKING_DATE, booking.getDate());
+            values.put(COLUMN_DURATION, booking.getDuration());
+            values.put(COLUMN_EMAIL, booking.getEmail());
+            values.put(COLUMN_PHONE, booking.getPhoneNumber());
+
+            // 如果 memberName 不为 null，则添加它
+            if (booking.getMemberName() != null) {
+                values.put(COLUMN_MEMBER_NAME, booking.getMemberName());
+            }
+
+            values.put(COLUMN_DAY_OF_WEEK, booking.getDayOfWeek());
+
+            // 执行插入操作
+            result = db.insert(TABLE_BOOKINGS, null, values);
+
+            if (result != -1) {
+                db.setTransactionSuccessful();
+            } else {
+                Log.e("Database Error", "Booking insertion failed.");
+            }
+        } catch (Exception e) {
+            Log.e("Database Error", "Error while inserting booking: " + e.getMessage());
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+
         return result;
     }
 

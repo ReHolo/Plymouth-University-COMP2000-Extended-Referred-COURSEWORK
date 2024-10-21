@@ -82,7 +82,7 @@ public class BookingActivityTest {
         setFieldValue("etDuration", "2 hours");
 
         // Perform booking
-        bookingActivity.btnConfirmBooking.performClick();
+        bookingActivity.btn.performClick();
 
         // Verify booking added
         Mockito.verify(databaseHelper).addBooking(ArgumentMatchers.any(Booking.class));

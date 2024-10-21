@@ -3,6 +3,9 @@ package com.example.tennisbooking;
 import static android.provider.Settings.System.DATE_FORMAT;
 
 import android.content.DialogInterface;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -61,10 +64,18 @@ public class ManageBookingActivity extends AppCompatActivity {
 
         // Get the current user's account number
         String accountNo = databaseHelper.getCurrentUserAccountNo();
-        if (accountNo != null) {
-            fetchBookingDetailsFromApi(accountNo);  // Fetch booking details from API
+
+        Booking booking = databaseHelper.getBookingByAccountNo(Integer.parseInt(accountNo));
+        if (booking != null) {
+            bookingNo = String.valueOf(booking.getBookingNo());
+            tvCourtType.setText(booking.getCourtType());
+            tvCourtNo.setText(booking.getCourtNo());
+            tvBookingDate.setText(booking.getDate());
+            tvDuration.setText(booking.getDuration());
+            tvEmail.setText(booking.getEmail());
+            tvPhoneNumber.setText(booking.getPhoneNumber());
         } else {
-            Toast.makeText(this, "No logged-in user found.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Failed to fetch booking details", Toast.LENGTH_SHORT).show();
         }
 
         // Set up Update Booking button click event
@@ -72,84 +83,6 @@ public class ManageBookingActivity extends AppCompatActivity {
 
         // Set up Cancel Booking button click event
         btnCancelBooking.setOnClickListener(v -> showCancelConfirmationDialog(accountNo));
-    }
-
-    // Fetch booking details from the API
-    private void fetchBookingDetailsFromApi(String accountNo) {
-        new Thread(() -> {
-            try {
-                URL url = new URL("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/" + accountNo);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Accept", "application/json");
-
-                Log.d(TAG, "Sending GET request to URL: " + url);
-
-                int responseCode = conn.getResponseCode();
-                Log.d(TAG, "Response Code: " + responseCode);
-
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    String inputLine;
-                    StringBuilder response = new StringBuilder();
-
-                    while ((inputLine = in.readLine()) != null) {
-                        response.append(inputLine);
-                    }
-                    in.close();
-
-                    Log.d(TAG, "Response: " + response.toString());
-
-                    JSONObject jsonResponse = new JSONObject(response.toString());
-                    Booking booking = parseBookingDetails(jsonResponse);
-                    runOnUiThread(() -> displayBookingDetails(booking));
-                } else {
-                    Log.e(TAG, "Failed to fetch booking details. Response Code: " + responseCode);
-                    runOnUiThread(() -> Toast.makeText(this, "Failed to fetch booking details.", Toast.LENGTH_SHORT).show());
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error fetching booking details", e);
-                runOnUiThread(() -> Toast.makeText(this, "Error fetching booking details.", Toast.LENGTH_SHORT).show());
-            }
-        }).start();
-    }
-
-    // Parse booking details from JSON
-    private Booking parseBookingDetails(JSONObject jsonResponse) {
-        Booking booking = new Booking();
-        booking.setCourtType(jsonResponse.optString("courtType", "N/A"));
-        booking.setCourtNo(jsonResponse.optString("courtNo", "N/A"));
-        booking.setDate(parseDate(jsonResponse.optString("date", "N/A")));
-        booking.setDuration(jsonResponse.optString("duration", "N/A"));
-        booking.setEmail(jsonResponse.optString("email", "N/A"));
-        booking.setPhoneNumber(jsonResponse.optString("phoneNumber", "N/A"));
-        return booking;
-    }
-
-    // Parse date string to formatted date
-    private String parseDate(String dateString) {
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
-            return sdf.format(sdf.parse(dateString));
-        } catch (ParseException e) {
-            Log.e(TAG, "Error parsing date", e);
-            return "N/A";
-        }
-    }
-
-    // Display booking details in the UI
-    private void displayBookingDetails(Booking booking) {
-        try {
-            tvCourtType.setText("Court Type: " + booking.getCourtType());
-            tvCourtNo.setText("Court No: " + booking.getCourtNo());
-            tvBookingDate.setText("Date: " + booking.getDate());
-            tvDuration.setText("Duration: " + booking.getDuration());
-            tvEmail.setText("Email: " + booking.getEmail());
-            tvPhoneNumber.setText("Phone Number: " + booking.getPhoneNumber());
-        } catch (Exception e) {
-            Log.e(TAG, "Error displaying booking details", e);
-            Toast.makeText(this, "Error displaying booking details.", Toast.LENGTH_SHORT).show();
-        }
     }
 
     // Show a dialog to update email and phone number

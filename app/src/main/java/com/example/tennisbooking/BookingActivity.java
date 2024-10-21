@@ -1,26 +1,36 @@
-// BookingActivity.java
 package com.example.tennisbooking;
 
+import android.accessibilityservice.TouchInteractionController;
 import android.os.Bundle;
-import android.util.Log;
+import android.util.Patterns;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.tennisbooking.Interface.BookingService;
 import com.example.tennisbooking.TextWatcher.DateTimeTextWatcher;
 import com.example.tennisbooking.db.DatabaseHelper;
 import com.example.tennisbooking.entity.Booking;
+
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
 public class BookingActivity extends AppCompatActivity {
 
-    private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
-    private static final String TAG = "BookingActivity";
-
-    private EditText etEmail, etPhoneNumber, etBookingDate, etDuration, etMemberName;
+    public TouchInteractionController btn;
+    private EditText etEmail, etPhoneNumber, etBookingDate, etDuration;
     private TextView tvCourtDetails;
     Button btnConfirmBooking;
     DatabaseHelper databaseHelper;
@@ -30,143 +40,112 @@ public class BookingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_booking);
 
-        initializeUI();
-        displayCourtDetails();
-        setupListeners();
-    }
+        // 获取传递过来的球场信息
+        String courtNo = getIntent().getStringExtra("courtNo");
+        String courtType = getIntent().getStringExtra("courtType");
+        String availableSeason = getIntent().getStringExtra("availableSeason");
 
-    private void initializeUI() {
+        // 初始化UI组件
         tvCourtDetails = findViewById(R.id.courtDetails);
         etEmail = findViewById(R.id.etEmail);
         etPhoneNumber = findViewById(R.id.etPhoneNumber);
         etBookingDate = findViewById(R.id.etBookingDate);
         etDuration = findViewById(R.id.etDuration);
-        etMemberName = findViewById(R.id.etMemberName);
         btnConfirmBooking = findViewById(R.id.btnConfirmBooking);
         findViewById(R.id.toolbar_booking).setOnClickListener(v -> finish());
 
-        databaseHelper = new DatabaseHelper(this);
-        etBookingDate.addTextChangedListener(new DateTimeTextWatcher(etBookingDate));
-    }
-
-    private void displayCourtDetails() {
-        String courtNo = getIntent().getStringExtra("courtNo");
-        String courtType = getIntent().getStringExtra("courtType");
-        String availableSeason = getIntent().getStringExtra("availableSeason");
-
+        // 显示球场详细信息
         tvCourtDetails.setText("Court No: " + courtNo + "\nCourt Type: " + courtType + "\nAvailable Season: " + availableSeason);
-    }
 
-    private void setupListeners() {
-        btnConfirmBooking.setOnClickListener(v -> handleBooking());
-    }
+        // 初始化 DatabaseHelper
+        databaseHelper = new DatabaseHelper(this);
 
-    private void handleBooking() {
-        String email = etEmail.getText().toString().trim();
-        String phone = etPhoneNumber.getText().toString().trim();
-        String bookingDate = etBookingDate.getText().toString().trim();
-        String duration = etDuration.getText().toString().trim();
-        String memberName = etMemberName.getText().toString().trim();
+        // 使用 DateTimeTextWatcher 格式化日期输入
+        etBookingDate.addTextChangedListener(new DateTimeTextWatcher(etBookingDate));
 
-        if (!validateInput(email, phone, bookingDate, duration, memberName)) return;
+        // 设置预订按钮点击事件
+        btnConfirmBooking.setOnClickListener(v -> {
+            String email = etEmail.getText().toString().trim();
+            String phone = etPhoneNumber.getText().toString().trim();
+            String bookingDate = etBookingDate.getText().toString().trim();
+            String duration = etDuration.getText().toString().trim();
 
-        String accountNo = databaseHelper.getCurrentUserAccountNo();
-        if (accountNo == null) {
-            showToast("Failed to retrieve user account.");
-            return;
-        }
+            // 校验输入内容
+            if (!isValidEmail(email)) {
+                Toast.makeText(BookingActivity.this, "Invalid email format", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (!isValidPhoneNumber(phone)) {
+                Toast.makeText(BookingActivity.this, "Invalid phone number", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (email.isEmpty() || phone.isEmpty() || bookingDate.isEmpty() || duration.isEmpty()) {
+                Toast.makeText(BookingActivity.this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-        if (databaseHelper.userHasBooking(Integer.parseInt(accountNo))) {
-            showToast("You already have a booking. Please cancel it first.");
-            return;
-        }
+            // 校验预订时间是否超过48小时
+            if (!isWithin48Hours(bookingDate)) {
+                Toast.makeText(BookingActivity.this, "Booking time cannot exceed 48 hours from now.", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-        int dayOfWeek = getDayOfWeek(bookingDate);
-        if (dayOfWeek == -1) {
-            showToast("Invalid booking date.");
-            return;
-        }
+            // 获取当前登录用户的 accountNo
+            String accountNo = databaseHelper.getCurrentUserAccountNo();
+            if (accountNo == null) {
+                Toast.makeText(BookingActivity.this, "Failed to retrieve user account.", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-        Booking booking = createBooking(accountNo, bookingDate, duration, email, phone, memberName, dayOfWeek);
-        submitBooking(booking);
-    }
+            // 检查用户是否已有预订
+            if (databaseHelper.userHasBooking(Integer.parseInt(accountNo))) {
+                Toast.makeText(BookingActivity.this, "You already have a booking. Please cancel it first.", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-    private boolean validateInput(String email, String phone, String bookingDate, String duration, String memberName) {
-        if (!isValidEmail(email)) {
-            showToast("Invalid email format");
-            return false;
-        }
-        if (!isValidPhoneNumber(phone)) {
-            showToast("Invalid phone number");
-            return false;
-        }
-        if (email.isEmpty() || phone.isEmpty() || bookingDate.isEmpty() || duration.isEmpty() || memberName.isEmpty()) {
-            showToast("Please fill in all fields");
-            return false;
-        }
-        if (!isWithin48Hours(bookingDate)) {
-            showToast("Booking time cannot exceed 48 hours from now.");
-            return false;
-        }
-        return true;
-    }
+            // 将预订信息插入到数据库
+            String memberName = databaseHelper.getUserDetails(accountNo).toString();
+            Booking booking = new Booking(0, accountNo, courtNo, courtType, bookingDate, duration, email, phone, memberName, 0);
+            long result = databaseHelper.addBooking(booking);
 
-    private Booking createBooking(String accountNo, String Date, String duration, String email, String phoneNumber, String memberName, int dayOfWeek) {
-        Booking booking = new Booking();
-        booking.setBookingNo(0);
-        booking.setAccountNo(accountNo);
-        booking.setCourtNo(getIntent().getStringExtra("courtNo"));
-        booking.setCourtType(getIntent().getStringExtra("courtType"));
-        booking.setDate(Date);
-        booking.setDuration(duration);
-        booking.setEmail(email);
-        booking.setPhoneNumber(phoneNumber);
-        booking.setMemberName(memberName);
-        booking.setDayOfWeek(dayOfWeek);
-        Log.d(TAG, "Created booking: " + booking.toString());
-        return booking;
-    }
-
-    private void submitBooking(Booking booking) {
-        // Store booking data in the local database
-        long result = databaseHelper.addBooking(booking);
-        if (result == -1) {
-            showToast("Failed to store booking data locally. Please try again.");
-            return;
-        }
-
-        // Submit booking data to the API
-        databaseHelper.addBookingToApi(booking, apiResult -> {
-            if (apiResult != 1L) {
-                showToast("Failed to book court. Please try again.");
+            if (result == -1) {
+                Toast.makeText(BookingActivity.this, "Failed to book court. Please try again.", Toast.LENGTH_SHORT).show();
             } else {
-                showToast("Court booked successfully!");
-                databaseHelper.updateUserBookingStatus(Integer.parseInt(booking.getAccountNo()), true);
+                // 预订成功提示
+                Toast.makeText(BookingActivity.this, "Court booked successfully!", Toast.LENGTH_SHORT).show();
+
+                // 更新用户预订状态
+                databaseHelper.updateUserBookingStatus(Integer.parseInt(accountNo), true);
+
+                uploadBookingToApi((int) result, accountNo, courtNo, courtType, bookingDate, duration, email, phone);
+
+                // 完成后关闭活动
                 finish();
             }
         });
+
     }
 
+    // 校验邮箱格式
     private boolean isValidEmail(String email) {
-        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
+        return Patterns.EMAIL_ADDRESS.matcher(email).matches();
     }
 
+    // 校验电话号码格式
     private boolean isValidPhoneNumber(String phone) {
-        return android.util.Patterns.PHONE.matcher(phone).matches();
+        return Patterns.PHONE.matcher(phone).matches();
     }
 
+    // 校验预订时间是否在未来48小时内
     private boolean isWithin48Hours(String bookingDate) {
         try {
-            SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault());
             Calendar bookingTime = Calendar.getInstance();
             bookingTime.setTime(sdf.parse(bookingDate));
             Calendar currentTime = Calendar.getInstance();
-            Calendar maxBookingTime = (Calendar) currentTime.clone();
-            maxBookingTime.add(Calendar.HOUR, 48);
+            currentTime.add(Calendar.HOUR, 48);
 
-            Log.d(TAG, "Booking time: " + bookingTime.getTime() + ", Current time: " + currentTime.getTime() + ", Max booking time: " + maxBookingTime.getTime());
-
-            return bookingTime.before(maxBookingTime) && bookingTime.after(currentTime);
+            return bookingTime.before(currentTime);
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -175,17 +154,45 @@ public class BookingActivity extends AppCompatActivity {
 
     private int getDayOfWeek(String bookingDate) {
         try {
-            SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
-            Calendar bookingTime = Calendar.getInstance();
-            bookingTime.setTime(sdf.parse(bookingDate));
-            return bookingTime.get(Calendar.DAY_OF_WEEK);
-        } catch (Exception e) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault());
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(sdf.parse(bookingDate));
+            // Calendar.SUNDAY = 1, 我们将其调整为0-6表示周日到周六
+            return calendar.get(Calendar.DAY_OF_WEEK) - 1;
+        } catch (ParseException e) {
             e.printStackTrace();
-            return -1;
+            return -1; // 表示解析失败
         }
     }
 
-    private void showToast(String message) {
-        Toast.makeText(BookingActivity.this, message, Toast.LENGTH_SHORT).show();
+    private void uploadBookingToApi(int bookingNo, String accountNo, String courtNo, String courtType, String bookingDate, String duration, String email, String phone) {
+        // 创建 Booking 对象
+        int dayOfWeek = getDayOfWeek(bookingDate);
+        String memberName = "";
+        Booking booking = new Booking(bookingNo, accountNo, courtNo, courtType, bookingDate, duration, email, phone, memberName, 0);
+
+        // 使用 Retrofit 初始化
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/") // 替换为您的API基本URL
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        BookingService apiService = retrofit.create(BookingService.class);
+        Call<Booking> call = apiService.createBooking(booking);
+        call.enqueue(new Callback<Booking>() {
+            @Override
+            public void onResponse(@NonNull Call<Booking> call, @NonNull Response<Booking> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(BookingActivity.this, "Booking uploaded to server successfully!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(BookingActivity.this, "Failed to upload booking to server. Status Code: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Booking> call, Throwable t) {
+                Toast.makeText(BookingActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }
