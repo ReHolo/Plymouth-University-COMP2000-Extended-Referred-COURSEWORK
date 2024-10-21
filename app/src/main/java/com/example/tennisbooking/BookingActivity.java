@@ -1,8 +1,6 @@
 package com.example.tennisbooking;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.os.StrictMode;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -12,9 +10,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.tennisbooking.TextWatcher.DateTimeTextWatcher;
 import com.example.tennisbooking.db.DatabaseHelper;
 
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
@@ -31,16 +26,12 @@ public class BookingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_booking);
 
-        // Allow network operations on the main thread (not recommended for production)
-        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-        StrictMode.setThreadPolicy(policy);
-
-        // Get court information passed from the previous activity
+        // 获取传递过来的球场信息
         String courtNo = getIntent().getStringExtra("courtNo");
         String courtType = getIntent().getStringExtra("courtType");
         String availableSeason = getIntent().getStringExtra("availableSeason");
 
-        // Initialize UI components
+        // 初始化UI组件
         tvCourtDetails = findViewById(R.id.courtDetails);
         etEmail = findViewById(R.id.etEmail);
         etPhoneNumber = findViewById(R.id.etPhoneNumber);
@@ -49,23 +40,25 @@ public class BookingActivity extends AppCompatActivity {
         btnConfirmBooking = findViewById(R.id.btnConfirmBooking);
         findViewById(R.id.toolbar_booking).setOnClickListener(v -> finish());
 
-        etBookingDate.addTextChangedListener(new DateTimeTextWatcher(etBookingDate));
-
-        // Display court details
+        // 显示球场详细信息
         tvCourtDetails.setText("Court No: " + courtNo + "\nCourt Type: " + courtType + "\nAvailable Season: " + availableSeason);
 
-        // Initialize DatabaseHelper
+        // 初始化 DatabaseHelper
         databaseHelper = new DatabaseHelper(this);
 
-        // Set up booking button click event
+        // 使用 DateTimeTextWatcher 格式化日期输入
+        etBookingDate.addTextChangedListener(new DateTimeTextWatcher(etBookingDate));
+
+        // 设置预订按钮点击事件
         btnConfirmBooking.setOnClickListener(v -> {
             String email = etEmail.getText().toString().trim();
             String phone = etPhoneNumber.getText().toString().trim();
             String bookingDate = etBookingDate.getText().toString().trim();
             String duration = etDuration.getText().toString().trim();
 
+            // 校验输入内容
             if (!isValidEmail(email)) {
-                Toast.makeText(BookingActivity.this, "Invalid email address", Toast.LENGTH_SHORT).show();
+                Toast.makeText(BookingActivity.this, "Invalid email format", Toast.LENGTH_SHORT).show();
                 return;
             }
             if (!isValidPhoneNumber(phone)) {
@@ -77,57 +70,54 @@ public class BookingActivity extends AppCompatActivity {
                 return;
             }
 
-            // Validate booking time within 48 hours
+            // 校验预订时间是否超过48小时
             if (!isWithin48Hours(bookingDate)) {
                 Toast.makeText(BookingActivity.this, "Booking time cannot exceed 48 hours from now.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Get current user's account number
+            // 获取当前登录用户的 accountNo
             String accountNo = databaseHelper.getCurrentUserAccountNo();
             if (accountNo == null) {
                 Toast.makeText(BookingActivity.this, "Failed to retrieve user account.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Check if user already has a booking
+            // 检查用户是否已有预订
             if (databaseHelper.userHasBooking(accountNo)) {
                 Toast.makeText(BookingActivity.this, "You already have a booking. Please cancel it first.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Insert booking information into the database
+            // 将预订信息插入到数据库
             long result = databaseHelper.addBooking(accountNo, courtNo, courtType, bookingDate, duration, email, phone);
 
             if (result == -1) {
                 Toast.makeText(BookingActivity.this, "Failed to book court. Please try again.", Toast.LENGTH_SHORT).show();
             } else {
-                // Booking successful
+                // 预订成功提示
                 Toast.makeText(BookingActivity.this, "Court booked successfully!", Toast.LENGTH_SHORT).show();
 
-                // Update user booking status
+                // 更新用户预订状态
                 databaseHelper.updateUserBookingStatus(Integer.parseInt(accountNo), true);
 
-                // Send booking data to API
-                sendBookingDataToApi(accountNo, courtNo, courtType, bookingDate, duration, email, phone);
-
-                // Close activity after completion
+                // 完成后关闭活动
                 finish();
             }
         });
     }
 
-    // Validate email format
+    // 校验邮箱格式
     private boolean isValidEmail(String email) {
         return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
     }
 
-    // Validate phone number format
+    // 校验电话号码格式
     private boolean isValidPhoneNumber(String phone) {
         return android.util.Patterns.PHONE.matcher(phone).matches();
     }
 
-    // Validate booking time within 48 hours
+    // 校验预订时间是否在未来48小时内
     private boolean isWithin48Hours(String bookingDate) {
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
@@ -140,38 +130,6 @@ public class BookingActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
             return false;
-        }
-    }
-
-    // Send booking data to API
-    private void sendBookingDataToApi(String accountNo, String courtNo, String courtType, String bookingDate, String duration, String email, String phone) {
-        try {
-            URL url = new URL("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json; utf-8");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setDoOutput(true);
-
-            String jsonInputString = String.format(
-                "{\"accountNo\": \"%s\", \"courtNo\": \"%s\", \"courtType\": \"%s\", \"bookingDate\": \"%s\", \"duration\": \"%s\", \"email\": \"%s\", \"phone\": \"%s\"}",
-                accountNo, courtNo, courtType, bookingDate, duration, email, phone
-            );
-
-            try (OutputStream os = conn.getOutputStream()) {
-                byte[] input = jsonInputString.getBytes("utf-8");
-                os.write(input, 0, input.length);
-            }
-
-            int code = conn.getResponseCode();
-            if (code == HttpURLConnection.HTTP_OK) {
-                Toast.makeText(this, "Booking data sent to API successfully!", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Failed to send booking data to API.", Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Error sending booking data to API.", Toast.LENGTH_SHORT).show();
         }
     }
 }
