@@ -1,12 +1,12 @@
 package com.example.tennisbooking.entity;
 
 public class Court {
-    private int courtNo;
+    private String courtNo;
     private String courtType;
     private boolean isAvailable;
     private String availableSeason;
 
-    public Court(int courtNo, String courtType, boolean isAvailable, String availableSeason) {
+    public Court(String courtNo, String courtType, boolean isAvailable, String availableSeason) {
         this.courtNo = courtNo;
         this.courtType = courtType;
         this.isAvailable = isAvailable;
@@ -14,11 +14,11 @@ public class Court {
     }
 
     // Getters and setters
-    public int getCourtNo() {
+    public String getCourtNo() {
         return courtNo;
     }
 
-    public void setCourtNo(int courtNo) {
+    public void setCourtNo(String courtNo) {
         this.courtNo = courtNo;
     }
 

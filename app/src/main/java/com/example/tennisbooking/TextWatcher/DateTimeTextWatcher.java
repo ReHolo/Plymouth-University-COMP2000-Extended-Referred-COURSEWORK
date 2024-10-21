@@ -8,7 +8,7 @@ public class DateTimeTextWatcher implements TextWatcher {
 
     private EditText editText;
     private String current = "";
-    private String format = "yyyyMMddHHmm"; // 用于控制输入顺序
+    private String format = "yyyyMMddTHHmmss"; // 用于控制输入顺序
     private boolean isDeleting = false; // 检测用户是否在删除字符
 
     public DateTimeTextWatcher(EditText editText) {
@@ -34,7 +34,7 @@ public class DateTimeTextWatcher implements TextWatcher {
             return;
         }
 
-        // 清除所有的非数字字符
+        // 清除所有的非数字字符和'T'
         String cleanText = text.replaceAll("[^\\d]", "");
 
         // 如果用户正在删除字符，允许删除时跳过自动格式化
@@ -47,7 +47,7 @@ public class DateTimeTextWatcher implements TextWatcher {
             return;
         }
 
-        // 格式化字符串，确保符合 "yyyy-MM-dd HH:mm" 的格式
+        // 格式化字符串，确保符合 "yyyy-MM-dd'T'HH:mm:ss" 的格式
         StringBuilder formattedText = new StringBuilder();
 
         int length = cleanText.length();
@@ -57,8 +57,8 @@ public class DateTimeTextWatcher implements TextWatcher {
             if (i == 3 || i == 5) {
                 formattedText.append("-"); // 添加日期中的"-"
             } else if (i == 7) {
-                formattedText.append(" "); // 添加日期和时间的空格
-            } else if (i == 9) {
+                formattedText.append("T"); // 添加日期和时间的'T'
+            } else if (i == 9 || i == 11) {
                 formattedText.append(":"); // 添加时间中的":"
             }
         }
@@ -71,4 +71,3 @@ public class DateTimeTextWatcher implements TextWatcher {
         editText.addTextChangedListener(this);
     }
 }
-

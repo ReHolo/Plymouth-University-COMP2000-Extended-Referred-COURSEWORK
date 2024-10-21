@@ -23,10 +23,12 @@ import java.util.List;
 public class CourtAdapter extends RecyclerView.Adapter<CourtAdapter.CourtViewHolder> {
     private List<Court> courtList;
     private Context context;
+    private boolean userHasBooking;
 
-    public CourtAdapter(List<Court> courtList, Context context) {
+    public CourtAdapter(List<Court> courtList, Context context, boolean userHasBooking) {
         this.courtList = courtList;
         this.context = context;
+        this.userHasBooking = userHasBooking;
     }
 
     @NonNull
@@ -42,19 +44,14 @@ public class CourtAdapter extends RecyclerView.Adapter<CourtAdapter.CourtViewHol
         holder.tvCourtNo.setText("Court No: " + court.getCourtNo());
         holder.tvCourtType.setText("Court Type: " + court.getCourtType());
 
-        // 根据场地类型设置可用季节
         if ("Grass".equalsIgnoreCase(court.getCourtType())) {
             holder.tvAvailableSeason.setText("Available Season: Open in Summer");
         } else {
             holder.tvAvailableSeason.setText("Available Season: All Year");
         }
 
-        // 点击预订按钮
         holder.btnBookCourt.setOnClickListener(v -> {
-            // 实例化 DatabaseHelper
             DatabaseHelper databaseHelper = new DatabaseHelper(context);
-
-            // 获取当前用户的账号 ID
             String accountNo = databaseHelper.getCurrentUserAccountNo();
 
             if (accountNo == null) {
@@ -62,26 +59,24 @@ public class CourtAdapter extends RecyclerView.Adapter<CourtAdapter.CourtViewHol
                 return;
             }
 
-            // 检查用户是否已有预订
-            if (databaseHelper.userHasBooking(accountNo)) {
+            int accountNoInt = Integer.parseInt(accountNo);
+            if (databaseHelper.userHasBooking(accountNoInt)) {
                 Toast.makeText(context, "You can only book one court at a time.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // 判断草地场地的月份限制
             Calendar calendar = Calendar.getInstance();
-            int month = calendar.get(Calendar.MONTH) + 1; // Calendar 月份从 0 开始，需加 1
+            int month = calendar.get(Calendar.MONTH) + 1;
 
             if ("Grass".equalsIgnoreCase(court.getCourtType()) && (month < 7 || month > 9)) {
                 Toast.makeText(context, "Grass courts can only be booked in July, August, and September.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // 跳转到 BookingActivity 并传递球场信息
             Intent intent = new Intent(context, BookingActivity.class);
             intent.putExtra("courtNo", court.getCourtNo());
             intent.putExtra("courtType", court.getCourtType());
-            intent.putExtra("availableSeason", court.getAvailableSeason());
+            intent.putExtra("availableSeason", "All Year");
             context.startActivity(intent);
         });
     }

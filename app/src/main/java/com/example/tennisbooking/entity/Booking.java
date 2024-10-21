@@ -1,34 +1,16 @@
 package com.example.tennisbooking.entity;
 
-import java.io.Serializable;
-
-public class Booking implements Serializable {
-
+public class Booking {
     private int bookingNo;
     private String accountNo;
-    private String memberName;
     private String courtType;
     private String courtNo;
     private String date;
-    private int dayOfWeek;
     private String duration;
-    private String availableSeason;
     private String email;
     private String phoneNumber;
-
-    public Booking(int bookingNo,String accountNo, String memberName, String courtType, String courtNo, String email, String phoneNumber, String date, int dayOfWeek, String duration, String availableSeason) {
-        this.bookingNo = bookingNo;
-        this.accountNo = accountNo;
-        this.memberName = memberName;
-        this.courtType = courtType;
-        this.courtNo = courtNo;
-        this.email = email;
-        this.phoneNumber = phoneNumber;
-        this.date = date;
-        this.dayOfWeek = dayOfWeek;
-        this.duration = duration;
-        this.availableSeason = availableSeason;
-    }
+    private String memberName;
+    private int dayOfWeek;
 
     // Getters and Setters
     public int getBookingNo() {
@@ -43,16 +25,8 @@ public class Booking implements Serializable {
         return accountNo;
     }
 
-    public void setAccountNo(int AccountNo) {
-        this. accountNo= accountNo;
-    }
-
-    public String getMemberName() {
-        return memberName;
-    }
-
-    public void setMemberName(String memberName) {
-        this.memberName = memberName;
+    public void setAccountNo(String accountNo) {
+        this.accountNo = accountNo;
     }
 
     public String getCourtType() {
@@ -79,28 +53,12 @@ public class Booking implements Serializable {
         this.date = date;
     }
 
-    public int getDayOfWeek() {
-        return dayOfWeek;
-    }
-
-    public void setDayOfWeek(int dayOfWeek) {
-        this.dayOfWeek = dayOfWeek;
-    }
-
     public String getDuration() {
         return duration;
     }
 
     public void setDuration(String duration) {
         this.duration = duration;
-    }
-
-    public String getAvailableSeason() {
-        return availableSeason;
-    }
-
-    public void setAvailableSeason(String availableSeason) {
-        this.availableSeason = availableSeason;
     }
 
     public String getEmail() {
@@ -117,5 +75,37 @@ public class Booking implements Serializable {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public String getMemberName() {
+        return memberName;
+    }
+
+    public void setMemberName(String memberName) {
+        this.memberName = memberName;
+    }
+
+    public int getDayOfWeek() {
+        return dayOfWeek;
+    }
+
+    public void setDayOfWeek(int dayOfWeek) {
+        this.dayOfWeek = dayOfWeek;
+    }
+
+    @Override
+    public String toString() {
+        return "Booking{" +
+                "bookingNo=" + bookingNo +
+                ", accountNo='" + accountNo + '\'' +
+                ", courtType='" + courtType + '\'' +
+                ", courtNo='" + courtNo + '\'' +
+                ", date='" + date + '\'' +
+                ", duration='" + duration + '\'' +
+                ", email='" + email + '\'' +
+                ", phoneNumber='" + phoneNumber + '\'' +
+                ", memberName='" + memberName + '\'' +
+                ", dayOfWeek=" + dayOfWeek +
+                '}';
     }
 }

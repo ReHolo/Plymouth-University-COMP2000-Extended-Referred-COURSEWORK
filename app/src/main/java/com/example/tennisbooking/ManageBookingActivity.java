@@ -1,9 +1,11 @@
 package com.example.tennisbooking;
 
+import static android.provider.Settings.System.DATE_FORMAT;
+
 import android.content.DialogInterface;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -14,12 +16,23 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.tennisbooking.db.DatabaseHelper;
+import com.example.tennisbooking.entity.Booking;
 
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 public class ManageBookingActivity extends AppCompatActivity {
+
+    private static final String TAG = "ManageBookingActivity";
+    private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
 
     private TextView tvCourtType, tvCourtNo, tvBookingDate, tvDuration, tvEmail, tvPhoneNumber;
     private Button btnUpdateBooking, btnCancelBooking;
@@ -49,10 +62,9 @@ public class ManageBookingActivity extends AppCompatActivity {
         // Get the current user's account number
         String accountNo = databaseHelper.getCurrentUserAccountNo();
         if (accountNo != null) {
-            loadBookingDetails(accountNo);  // Load booking details if user has an account
+            fetchBookingDetailsFromApi(accountNo);  // Fetch booking details from API
         } else {
             Toast.makeText(this, "No logged-in user found.", Toast.LENGTH_SHORT).show();
-            return;
         }
 
         // Set up Update Booking button click event
@@ -62,40 +74,81 @@ public class ManageBookingActivity extends AppCompatActivity {
         btnCancelBooking.setOnClickListener(v -> showCancelConfirmationDialog(accountNo));
     }
 
-    // Load booking details from the database
-    private void loadBookingDetails(String accountNo) {
-        Cursor cursor = databaseHelper.getBookingsByUser(Integer.parseInt(accountNo));
+    // Fetch booking details from the API
+    private void fetchBookingDetailsFromApi(String accountNo) {
+        new Thread(() -> {
+            try {
+                URL url = new URL("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/" + accountNo);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Accept", "application/json");
 
-        if (cursor != null && cursor.moveToFirst()) {
-            int bookingNoIndex = cursor.getColumnIndex("bookingNo");
-            int courtTypeIndex = cursor.getColumnIndex("courtType");
-            int courtNoIndex = cursor.getColumnIndex("courtNo");
-            int bookingDateIndex = cursor.getColumnIndex("bookingDate");
-            int durationIndex = cursor.getColumnIndex("duration");
-            int emailIndex = cursor.getColumnIndex("email");
-            int phoneIndex = cursor.getColumnIndex("phone");
+                Log.d(TAG, "Sending GET request to URL: " + url);
 
-            if (bookingNoIndex != -1) {
-                // Load booking details
-                bookingNo = cursor.getString(bookingNoIndex);
-                String courtType = cursor.getString(courtTypeIndex);
-                String courtNo = cursor.getString(courtNoIndex);
-                String bookingDate = cursor.getString(bookingDateIndex);
-                String duration = cursor.getString(durationIndex);
-                String email = cursor.getString(emailIndex);
-                String phone = cursor.getString(phoneIndex);
+                int responseCode = conn.getResponseCode();
+                Log.d(TAG, "Response Code: " + responseCode);
 
-                // Display details in the UI
-                tvCourtType.setText("Court Type: " + courtType);
-                tvCourtNo.setText("Court No: " + courtNo);
-                tvBookingDate.setText("Booking Date: " + bookingDate);
-                tvDuration.setText("Duration: " + duration);
-                tvEmail.setText("Email: " + email);
-                tvPhoneNumber.setText("Phone Number: " + phone);
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    String inputLine;
+                    StringBuilder response = new StringBuilder();
+
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    in.close();
+
+                    Log.d(TAG, "Response: " + response.toString());
+
+                    JSONObject jsonResponse = new JSONObject(response.toString());
+                    Booking booking = parseBookingDetails(jsonResponse);
+                    runOnUiThread(() -> displayBookingDetails(booking));
+                } else {
+                    Log.e(TAG, "Failed to fetch booking details. Response Code: " + responseCode);
+                    runOnUiThread(() -> Toast.makeText(this, "Failed to fetch booking details.", Toast.LENGTH_SHORT).show());
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error fetching booking details", e);
+                runOnUiThread(() -> Toast.makeText(this, "Error fetching booking details.", Toast.LENGTH_SHORT).show());
             }
-            cursor.close();
-        } else {
-            Toast.makeText(this, "No booking found", Toast.LENGTH_SHORT).show();
+        }).start();
+    }
+
+    // Parse booking details from JSON
+    private Booking parseBookingDetails(JSONObject jsonResponse) {
+        Booking booking = new Booking();
+        booking.setCourtType(jsonResponse.optString("courtType", "N/A"));
+        booking.setCourtNo(jsonResponse.optString("courtNo", "N/A"));
+        booking.setDate(parseDate(jsonResponse.optString("date", "N/A")));
+        booking.setDuration(jsonResponse.optString("duration", "N/A"));
+        booking.setEmail(jsonResponse.optString("email", "N/A"));
+        booking.setPhoneNumber(jsonResponse.optString("phoneNumber", "N/A"));
+        return booking;
+    }
+
+    // Parse date string to formatted date
+    private String parseDate(String dateString) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
+            return sdf.format(sdf.parse(dateString));
+        } catch (ParseException e) {
+            Log.e(TAG, "Error parsing date", e);
+            return "N/A";
+        }
+    }
+
+    // Display booking details in the UI
+    private void displayBookingDetails(Booking booking) {
+        try {
+            tvCourtType.setText("Court Type: " + booking.getCourtType());
+            tvCourtNo.setText("Court No: " + booking.getCourtNo());
+            tvBookingDate.setText("Date: " + booking.getDate());
+            tvDuration.setText("Duration: " + booking.getDuration());
+            tvEmail.setText("Email: " + booking.getEmail());
+            tvPhoneNumber.setText("Phone Number: " + booking.getPhoneNumber());
+        } catch (Exception e) {
+            Log.e(TAG, "Error displaying booking details", e);
+            Toast.makeText(this, "Error displaying booking details.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -119,10 +172,10 @@ public class ManageBookingActivity extends AppCompatActivity {
                     if (!TextUtils.isEmpty(newEmail) && !TextUtils.isEmpty(newPhone)) {
                         boolean isUpdated = databaseHelper.updateBooking(bookingNo, newEmail, newPhone);
                         if (isUpdated) {
+                            sendUpdatedBookingDataToApi(bookingNo, newEmail, newPhone);
                             tvEmail.setText(newEmail);
                             tvPhoneNumber.setText(newPhone);
                             Toast.makeText(ManageBookingActivity.this, "Booking updated successfully", Toast.LENGTH_SHORT).show();
-                            sendUpdatedBookingDataToApi(bookingNo, newEmail, newPhone);
                         } else {
                             Toast.makeText(ManageBookingActivity.this, "Failed to update booking", Toast.LENGTH_SHORT).show();
                         }
@@ -141,10 +194,10 @@ public class ManageBookingActivity extends AppCompatActivity {
         builder.setTitle("Cancel Booking")
                 .setMessage("Are you sure you want to cancel this booking?")
                 .setPositiveButton("Yes", (dialog, which) -> {
-                    boolean isDeleted = databaseHelper.deleteBookingByAccountNo(accountNo);
+                    boolean isDeleted = databaseHelper.deleteBookingByBookingNo(bookingNo);
                     if (isDeleted) {
                         Toast.makeText(ManageBookingActivity.this, "Booking cancelled successfully", Toast.LENGTH_SHORT).show();
-                        databaseHelper.updateUserBookingStatus(accountNo, false);  // Update user status to allow new booking
+                        databaseHelper.updateUserBookingStatus(Integer.parseInt(accountNo), false);  // Update user status to allow new booking
                         sendCancelBookingDataToApi(bookingNo);
                         finish(); // Close activity after cancellation
                     } else {
@@ -158,53 +211,70 @@ public class ManageBookingActivity extends AppCompatActivity {
 
     // Send updated booking data to API
     private void sendUpdatedBookingDataToApi(String bookingNo, String newEmail, String newPhone) {
-        try {
-            URL url = new URL("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/" + bookingNo);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("PUT");
-            conn.setRequestProperty("Content-Type", "application/json; utf-8");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setDoOutput(true);
+        new Thread(() -> {
+            try {
+                URL url = new URL("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/" + bookingNo);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("PUT");
+                conn.setRequestProperty("Content-Type", "application/json; utf-8");
+                conn.setRequestProperty("Accept", "application/json");
+                conn.setDoOutput(true);
 
-            String jsonInputString = String.format(
-                "{\"email\": \"%s\", \"phone\": \"%s\"}",
-                newEmail, newPhone
-            );
+                String jsonInputString = String.format(
+                        "{\"email\": \"%s\", \"phone\": \"%s\"}",
+                        newEmail, newPhone
+                );
 
-            try (OutputStream os = conn.getOutputStream()) {
-                byte[] input = jsonInputString.getBytes("utf-8");
-                os.write(input, 0, input.length);
+                Log.d(TAG, "Sending PUT request to URL: " + url);
+                Log.d(TAG, "Payload: " + jsonInputString);
+
+                try (OutputStream os = conn.getOutputStream()) {
+                    byte[] input = jsonInputString.getBytes("utf-8");
+                    os.write(input, 0, input.length);
+                }
+
+                int code = conn.getResponseCode();
+                Log.d(TAG, "Response Code: " + code);
+
+                if (code == HttpURLConnection.HTTP_OK) {
+                    Log.d(TAG, "Booking data updated in API successfully!");
+                    runOnUiThread(() -> Toast.makeText(this, "Booking data updated in API successfully!", Toast.LENGTH_SHORT).show());
+                } else {
+                    Log.e(TAG, "Failed to update booking data in API. Response Code: " + code);
+                    runOnUiThread(() -> Toast.makeText(this, "Failed to update booking data in API.", Toast.LENGTH_SHORT).show());
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error updating booking data in API", e);
+                runOnUiThread(() -> Toast.makeText(this, "Error updating booking data in API.", Toast.LENGTH_SHORT).show());
             }
-
-            int code = conn.getResponseCode();
-            if (code == HttpURLConnection.HTTP_OK) {
-                Toast.makeText(this, "Booking data updated in API successfully!", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Failed to update booking data in API.", Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Error updating booking data in API.", Toast.LENGTH_SHORT).show();
-        }
+        }).start();
     }
 
     // Send cancel booking data to API
     private void sendCancelBookingDataToApi(String bookingNo) {
-        try {
-            URL url = new URL("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/" + bookingNo);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("DELETE");
-            conn.setRequestProperty("Accept", "application/json");
+        new Thread(() -> {
+            try {
+                URL url = new URL("https://web.socem.plymouth.ac.uk/COMP2000/ReferralApi/api/Bookings/" + bookingNo);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("DELETE");
+                conn.setRequestProperty("Accept", "application/json");
 
-            int code = conn.getResponseCode();
-            if (code == HttpURLConnection.HTTP_OK) {
-                Toast.makeText(this, "Booking data deleted in API successfully!", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Failed to delete booking data in API.", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Sending DELETE request to URL: " + url);
+
+                int code = conn.getResponseCode();
+                Log.d(TAG, "Response Code: " + code);
+
+                if (code == HttpURLConnection.HTTP_OK) {
+                    Log.d(TAG, "Booking data deleted in API successfully!");
+                    runOnUiThread(() -> Toast.makeText(this, "Booking data deleted in API successfully!", Toast.LENGTH_SHORT).show());
+                } else {
+                    Log.e(TAG, "Failed to delete booking data in API. Response Code: " + code);
+                    runOnUiThread(() -> Toast.makeText(this, "Failed to delete booking data in API.", Toast.LENGTH_SHORT).show());
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error deleting booking data in API", e);
+                runOnUiThread(() -> Toast.makeText(this, "Error deleting booking data in API.", Toast.LENGTH_SHORT).show());
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Error deleting booking data in API.", Toast.LENGTH_SHORT).show();
-        }
+        }).start();
     }
 }

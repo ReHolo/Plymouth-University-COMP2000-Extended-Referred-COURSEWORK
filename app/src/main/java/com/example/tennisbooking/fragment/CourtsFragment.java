@@ -36,8 +36,9 @@ public class CourtsFragment extends Fragment {
     }
 
     private void fetchCourts() {
-        courtList = databaseHelper.getAllCourts();
-        courtAdapter = new CourtAdapter(courtList, getContext());
+        courtList = (List<Court>) databaseHelper.getAllCourts();
+        boolean userHasBooking = databaseHelper.userHasBooking(Integer.parseInt(databaseHelper.getCurrentUserAccountNo()));
+        courtAdapter = new CourtAdapter(courtList, getContext(), userHasBooking);
         recyclerViewCourts.setAdapter(courtAdapter);
     }
 }
