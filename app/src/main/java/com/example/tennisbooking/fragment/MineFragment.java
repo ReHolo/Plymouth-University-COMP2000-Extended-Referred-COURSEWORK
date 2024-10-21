@@ -10,6 +10,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
 import com.example.tennisbooking.LoginActivity;
@@ -44,13 +45,21 @@ public class MineFragment extends Fragment {
 
         // Set logout button click listener
         logoutButton.setOnClickListener(v -> {
-            // Clear user info and redirect to login activity
-            clearUserInfo();
-            Intent intent = new Intent(getActivity(), LoginActivity.class);
-            startActivity(intent);
-            if (getActivity() != null) {
-                getActivity().finish();
-            }
+            // Show confirmation dialog
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Logout")
+                    .setMessage("Are you sure you want to logout?")
+                    .setPositiveButton("Yes", (dialog, which) -> {
+                        // Clear user info and redirect to login activity
+                        clearUserInfo();
+                        Intent intent = new Intent(getActivity(), LoginActivity.class);
+                        startActivity(intent);
+                        if (getActivity() != null) {
+                            getActivity().finish();
+                        }
+                    })
+                    .setNegativeButton("No", null)
+                    .show();
         });
 
         // Initialize and set click listener for manage bookings button
