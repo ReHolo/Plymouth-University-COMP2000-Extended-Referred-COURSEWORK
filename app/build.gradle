@@ -49,5 +49,10 @@ dependencies {
     implementation libs.constraintlayout.v210
     implementation libs.material.v140
     implementation libs.cardview
+    testImplementation libs.junit
+    testImplementation libs.mockito.core
+    androidTestImplementation libs.junit.v113
+    androidTestImplementation libs.espresso.core.v340
+    testImplementation libs.robolectric
 
 }

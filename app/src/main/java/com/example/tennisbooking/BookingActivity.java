@@ -22,8 +22,8 @@ public class BookingActivity extends AppCompatActivity {
 
     private EditText etEmail, etPhoneNumber, etBookingDate, etDuration, etMemberName;
     private TextView tvCourtDetails;
-    private Button btnConfirmBooking;
-    private DatabaseHelper databaseHelper;
+    Button btnConfirmBooking;
+    DatabaseHelper databaseHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

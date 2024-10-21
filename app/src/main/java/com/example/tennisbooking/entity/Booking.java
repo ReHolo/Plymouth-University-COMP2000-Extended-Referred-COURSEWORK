@@ -12,6 +12,7 @@ public class Booking {
     private String memberName;
     private int dayOfWeek;
 
+
     // Getters and Setters
     public int getBookingNo() {
         return bookingNo;

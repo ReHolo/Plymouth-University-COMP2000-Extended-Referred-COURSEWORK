@@ -178,6 +178,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         new AddBookingTask(callback).execute(booking);
     }
 
+
     private static class AddBookingTask extends AsyncTask<Booking, Void, Long> {
         private BookingCallback callback;
 
